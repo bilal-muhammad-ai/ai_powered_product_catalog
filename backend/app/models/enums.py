@@ -19,11 +19,6 @@ class DataType(str, enum.Enum):
     multi_select = "multi_select"
 
 
-class AttributeScope(str, enum.Enum):
-    product = "product"
-    variant = "variant"
-
-
 class ProductStatus(str, enum.Enum):
     draft = "draft"
     active = "active"

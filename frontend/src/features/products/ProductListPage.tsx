@@ -96,7 +96,6 @@ export function ProductListPage() {
               <th className="px-4 py-3">Product</th>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Variants</th>
               <th className="px-4 py-3">Price</th>
               <th className="px-4 py-3" />
             </tr>
@@ -104,7 +103,7 @@ export function ProductListPage() {
           <tbody>
             {items.length === 0 ? (
               <tr>
-                <td className="px-4 py-6 text-stone-500" colSpan={6}>
+                <td className="px-4 py-6 text-stone-500" colSpan={5}>
                   No products match.
                 </td>
               </tr>
@@ -113,12 +112,13 @@ export function ProductListPage() {
               <tr key={item.id} className="border-t border-line">
                 <td className="px-4 py-3">
                   <p className="font-semibold">{item.name}</p>
-                  <p className="font-mono text-xs text-stone-500">{item.code || item.slug}</p>
+                  <p className="font-mono text-xs text-stone-500">{item.sku}</p>
                 </td>
                 <td className="px-4 py-3">{item.category_name}</td>
                 <td className="px-4 py-3 capitalize">{item.status}</td>
-                <td className="px-4 py-3">{item.variant_count}</td>
-                <td className="px-4 py-3">{priceLabel(item)}</td>
+                <td className="px-4 py-3">
+                  {item.currency_code} {item.selling_price}
+                </td>
                 <td className="px-4 py-3 text-right">
                   <Link className="btn-ghost mr-2" to={`/products/${item.id}`}>
                     Edit
@@ -142,14 +142,4 @@ export function ProductListPage() {
       </div>
     </div>
   )
-}
-
-function priceLabel(item: ProductListItem) {
-  if (!item.selling_price_min) {
-    return "—"
-  }
-  if (item.selling_price_max && item.selling_price_max !== item.selling_price_min) {
-    return `${item.selling_price_min} – ${item.selling_price_max}`
-  }
-  return item.selling_price_min
 }

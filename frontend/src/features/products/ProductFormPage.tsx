@@ -4,7 +4,6 @@ import { getProduct, listAttributes, listCategories, listUnits, saveProduct } fr
 import type { Attribute, CategoryNode, Unit } from "../../api/types"
 import { DynamicAttributeFields } from "../../components/forms/DynamicAttributeFields"
 import { ErrorNote, Field, PageHeader } from "../../components/ui"
-import { VariantEditor, emptyVariant, type VariantDraft } from "../variants/VariantEditor"
 import { flattenCategories } from "../../lib/tree"
 
 function pick(values: Record<string, unknown>, allowed: Set<string>) {
@@ -43,12 +42,19 @@ export function ProductFormPage() {
   const [schema, setSchema] = useState<Attribute[]>([])
   const [categoryId, setCategoryId] = useState("")
   const [name, setName] = useState("")
+  const [sku, setSku] = useState("")
+  const [barcode, setBarcode] = useState("")
   const [code, setCode] = useState("")
   const [description, setDescription] = useState("")
   const [status, setStatus] = useState("draft")
   const [baseUnitId, setBaseUnitId] = useState("")
+  const [sellingUnitId, setSellingUnitId] = useState("")
+  const [netQuantity, setNetQuantity] = useState("")
+  const [netQuantityUnitId, setNetQuantityUnitId] = useState("")
+  const [costPrice, setCostPrice] = useState("")
+  const [sellingPrice, setSellingPrice] = useState("")
+  const [currencyCode, setCurrencyCode] = useState("PKR")
   const [productValues, setProductValues] = useState<Record<string, unknown>>({})
-  const [variants, setVariants] = useState<VariantDraft[]>([emptyVariant()])
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
@@ -65,26 +71,19 @@ export function ProductFormPage() {
         setSchema(attributes.filter((attribute) => attribute.is_active))
         setCategoryId(product.category_id)
         setName(product.name)
+        setSku(product.sku)
+        setBarcode(product.barcode ?? "")
         setCode(product.code ?? "")
         setDescription(product.description ?? "")
         setStatus(product.status)
         setBaseUnitId(product.base_unit_id ?? "")
+        setSellingUnitId(product.selling_unit_id)
+        setNetQuantity(product.net_quantity ?? "")
+        setNetQuantityUnitId(product.net_quantity_unit_id ?? "")
+        setCostPrice(product.cost_price)
+        setSellingPrice(product.selling_price)
+        setCurrencyCode(product.currency_code)
         setProductValues(Object.fromEntries(product.attribute_values.map((item) => [item.attribute_id, item.value])))
-        setVariants(
-          product.variants.map((variant) => ({
-            sku: variant.sku,
-            barcode: variant.barcode ?? "",
-            name: variant.name ?? "",
-            selling_unit_id: variant.selling_unit_id,
-            net_quantity: variant.net_quantity ?? "",
-            net_quantity_unit_id: variant.net_quantity_unit_id ?? "",
-            cost_price: variant.cost_price,
-            selling_price: variant.selling_price,
-            currency_code: variant.currency_code,
-            is_active: variant.is_active,
-            values: Object.fromEntries(variant.attribute_values.map((item) => [item.attribute_id, item.value])),
-          })),
-        )
       })
       .catch((reason: Error) => setError(reason.message))
   }, [productId])
@@ -99,17 +98,13 @@ export function ProductFormPage() {
     try {
       const attributes = (await listAttributes(nextCategoryId, true)).filter((attribute) => attribute.is_active)
       setSchema(attributes)
-      const productIds = new Set(attributes.filter((attribute) => attribute.scope === "product").map((attribute) => attribute.id))
-      const variantIds = new Set(attributes.filter((attribute) => attribute.scope === "variant").map((attribute) => attribute.id))
-      setProductValues((current) => pick(current, productIds))
-      setVariants((current) => current.map((variant) => ({ ...variant, values: pick(variant.values, variantIds) })))
+      const attributeIds = new Set(attributes.map((attribute) => attribute.id))
+      setProductValues((current) => pick(current, attributeIds))
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not load category fields")
     }
   }
 
-  const productAttributes = schema.filter((attribute) => attribute.scope === "product")
-  const variantAttributes = schema.filter((attribute) => attribute.scope === "variant")
   const flat = flattenCategories(categories)
 
   async function onSubmit(event: FormEvent) {
@@ -119,31 +114,29 @@ export function ProductFormPage() {
       setError("Choose a category")
       return
     }
+    if (!sellingUnitId) {
+      setError("Choose a selling unit")
+      return
+    }
     setSaving(true)
     try {
       const saved = await saveProduct(
         {
           category_id: categoryId,
           name,
+          sku,
+          barcode: barcode || null,
           code: code || null,
           description: description || null,
           status,
           base_unit_id: baseUnitId || null,
-          attribute_values: toValueList(productAttributes, productValues),
-          variants: variants.map((variant, index) => ({
-            sku: variant.sku,
-            barcode: variant.barcode || null,
-            name: variant.name || null,
-            selling_unit_id: variant.selling_unit_id,
-            net_quantity: variant.net_quantity || null,
-            net_quantity_unit_id: variant.net_quantity_unit_id || null,
-            cost_price: variant.cost_price,
-            selling_price: variant.selling_price,
-            currency_code: variant.currency_code || "PKR",
-            is_active: variant.is_active,
-            sort_order: index,
-            attribute_values: toValueList(variantAttributes, variant.values),
-          })),
+          selling_unit_id: sellingUnitId,
+          net_quantity: netQuantity || null,
+          net_quantity_unit_id: netQuantityUnitId || null,
+          cost_price: costPrice,
+          selling_price: sellingPrice,
+          currency_code: currencyCode || "PKR",
+          attribute_values: toValueList(schema, productValues),
         },
         productId,
       )
@@ -182,8 +175,14 @@ export function ProductFormPage() {
         <Field label="Name">
           <input className="field" value={name} onChange={(event) => setName(event.target.value)} required />
         </Field>
+        <Field label="SKU">
+          <input className="field" value={sku} onChange={(event) => setSku(event.target.value)} required />
+        </Field>
         <Field label="Code">
           <input className="field" value={code} onChange={(event) => setCode(event.target.value)} />
+        </Field>
+        <Field label="Barcode">
+          <input className="field" value={barcode} onChange={(event) => setBarcode(event.target.value)} />
         </Field>
         <Field label="Status">
           <select className="field" value={status} onChange={(event) => setStatus(event.target.value)}>
@@ -202,6 +201,38 @@ export function ProductFormPage() {
             ))}
           </select>
         </Field>
+        <Field label="Selling unit">
+          <select className="field" value={sellingUnitId} onChange={(event) => setSellingUnitId(event.target.value)} required>
+            <option value="">Select a unit</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name} ({unit.symbol})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Net quantity">
+          <input className="field" value={netQuantity} onChange={(event) => setNetQuantity(event.target.value)} />
+        </Field>
+        <Field label="Quantity unit">
+          <select className="field" value={netQuantityUnitId} onChange={(event) => setNetQuantityUnitId(event.target.value)}>
+            <option value="">None</option>
+            {units.map((unit) => (
+              <option key={unit.id} value={unit.id}>
+                {unit.name} ({unit.symbol})
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Cost price">
+          <input className="field" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} required />
+        </Field>
+        <Field label="Selling price">
+          <input className="field" value={sellingPrice} onChange={(event) => setSellingPrice(event.target.value)} required />
+        </Field>
+        <Field label="Currency">
+          <input className="field" value={currencyCode} onChange={(event) => setCurrencyCode(event.target.value)} required />
+        </Field>
         <div className="md:col-span-2">
           <Field label="Description">
             <textarea className="field min-h-24" value={description} onChange={(event) => setDescription(event.target.value)} />
@@ -212,17 +243,13 @@ export function ProductFormPage() {
         <h2 className="mb-3 font-display text-xl">Specifications</h2>
         {categoryId ? (
           <DynamicAttributeFields
-            attributes={productAttributes}
+            attributes={schema}
             values={productValues}
             onChange={(attributeId, value) => setProductValues((current) => ({ ...current, [attributeId]: value }))}
           />
         ) : (
           <p className="text-sm text-stone-500">Select a category to show its fields.</p>
         )}
-      </section>
-      <section className="mb-6">
-        <h2 className="mb-3 font-display text-xl">Variants</h2>
-        <VariantEditor variants={variants} units={units} attributes={variantAttributes} onChange={setVariants} />
       </section>
       <button className="btn" type="submit" disabled={saving}>
         {saving ? "Saving…" : "Save product"}

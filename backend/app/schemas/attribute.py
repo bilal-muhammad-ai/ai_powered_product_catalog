@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import AttributeScope, DataType
+from app.models.enums import DataType
 
 
 class AttributeOptionCreate(BaseModel):
@@ -36,7 +36,6 @@ class AttributeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     code: str | None = Field(default=None, max_length=80)
     data_type: DataType
-    scope: AttributeScope
     unit_id: uuid.UUID | None = None
     is_required: bool = False
     is_filterable: bool = False
@@ -53,7 +52,6 @@ class AttributeUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=160)
     code: str | None = Field(default=None, max_length=80)
     data_type: DataType | None = None
-    scope: AttributeScope | None = None
     unit_id: uuid.UUID | None = None
     is_required: bool | None = None
     is_filterable: bool | None = None
@@ -74,7 +72,6 @@ class AttributeOut(BaseModel):
     code: str
     name: str
     data_type: DataType
-    scope: AttributeScope
     unit_id: uuid.UUID | None
     is_required: bool
     is_filterable: bool

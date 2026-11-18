@@ -6,6 +6,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     Enum,
@@ -28,6 +29,13 @@ class Product(UUIDMixin, TimestampMixin, Base):
     __table_args__ = (
         Index("ix_products_category_id", "category_id"),
         Index("ix_products_status", "status"),
+        CheckConstraint("cost_price >= 0", name="ck_product_cost_nonnegative"),
+        CheckConstraint("selling_price >= 0", name="ck_product_price_nonnegative"),
+        CheckConstraint("net_quantity IS NULL OR net_quantity > 0", name="ck_product_net_quantity_positive"),
+        CheckConstraint(
+            "net_quantity IS NULL OR net_quantity_unit_id IS NOT NULL",
+            name="ck_product_net_quantity_unit",
+        ),
     )
 
     category_id: Mapped[uuid.UUID] = mapped_column(
@@ -40,10 +48,26 @@ class Product(UUIDMixin, TimestampMixin, Base):
         ForeignKey("units.id", ondelete="RESTRICT"),
         nullable=True,
     )
+    sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    barcode: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(220), unique=True, nullable=False)
     code: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    selling_unit_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("units.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    net_quantity: Mapped[Decimal | None] = mapped_column(Numeric(14, 4), nullable=True)
+    net_quantity_unit_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("units.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
+    cost_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    selling_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), default="PKR", server_default="PKR", nullable=False)
     status: Mapped[ProductStatus] = mapped_column(
         Enum(ProductStatus, name="product_status", native_enum=False, length=16),
         nullable=False,
@@ -52,16 +76,14 @@ class Product(UUIDMixin, TimestampMixin, Base):
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     category: Mapped["Category"] = relationship("Category")
-    base_unit: Mapped["Unit | None"] = relationship("Unit")
+    base_unit: Mapped["Unit | None"] = relationship("Unit", foreign_keys=[base_unit_id])
+    selling_unit: Mapped["Unit"] = relationship("Unit", foreign_keys=[selling_unit_id])
+    net_quantity_unit: Mapped["Unit | None"] = relationship("Unit", foreign_keys=[net_quantity_unit_id])
     attribute_values: Mapped[list["ProductAttributeValue"]] = relationship(
         back_populates="product",
         cascade="all, delete-orphan",
     )
     multi_options: Mapped[list["ProductAttributeMultiOption"]] = relationship(
-        back_populates="product",
-        cascade="all, delete-orphan",
-    )
-    variants: Mapped[list["ProductVariant"]] = relationship(
         back_populates="product",
         cascade="all, delete-orphan",
     )

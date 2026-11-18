@@ -26,7 +26,6 @@ export type CategoryNode = {
 }
 
 export type DataType = "text" | "number" | "boolean" | "date" | "single_select" | "multi_select"
-export type AttributeScope = "product" | "variant"
 
 export type AttributeOption = {
   id: string
@@ -44,7 +43,6 @@ export type Attribute = {
   code: string
   name: string
   data_type: DataType
-  scope: AttributeScope
   unit_id: string | null
   is_required: boolean
   is_filterable: boolean
@@ -67,35 +65,25 @@ export type AttributeValue = {
   value: unknown
 }
 
-export type Variant = {
+export type ProductDetail = {
   id: string
+  category_id: string
+  category_name: string
+  base_unit_id: string | null
   sku: string
   barcode: string | null
-  name: string | null
+  name: string
+  slug: string
+  code: string | null
+  description: string | null
   selling_unit_id: string
   net_quantity: string | null
   net_quantity_unit_id: string | null
   cost_price: string
   selling_price: string
   currency_code: string
-  is_active: boolean
-  sort_order: number
-  variant_key: string
-  attribute_values: AttributeValue[]
-}
-
-export type ProductDetail = {
-  id: string
-  category_id: string
-  category_name: string
-  base_unit_id: string | null
-  name: string
-  slug: string
-  code: string | null
-  description: string | null
   status: "draft" | "active" | "archived"
   attribute_values: AttributeValue[]
-  variants: Variant[]
   created_at: string
   updated_at: string
 }
@@ -103,13 +91,13 @@ export type ProductDetail = {
 export type ProductListItem = {
   id: string
   name: string
+  sku: string
   code: string | null
   slug: string
   status: ProductDetail["status"]
   category_id: string
   category_name: string
-  variant_count: number
-  selling_price_min: string | null
-  selling_price_max: string | null
+  selling_price: string
+  currency_code: string
   updated_at: string
 }

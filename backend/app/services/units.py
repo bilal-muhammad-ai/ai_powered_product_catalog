@@ -7,7 +7,6 @@ from app.core.exceptions import CatalogueError
 from app.models.attribute import CategoryAttribute
 from app.models.product import Product
 from app.models.unit import Unit
-from app.models.variant import ProductVariant
 from app.schemas.unit import UnitCreate, UnitUpdate
 
 
@@ -61,13 +60,14 @@ def delete_unit(db: Session, unit: Unit) -> None:
     in_use = any(
         [
             db.scalar(select(CategoryAttribute.id).where(CategoryAttribute.unit_id == unit.id)),
-            db.scalar(select(Product.id).where(Product.base_unit_id == unit.id, Product.deleted_at.is_(None))),
             db.scalar(
-                select(ProductVariant.id).where(
+                select(Product.id).where(
+                    Product.deleted_at.is_(None),
                     or_(
-                        ProductVariant.selling_unit_id == unit.id,
-                        ProductVariant.net_quantity_unit_id == unit.id,
-                    )
+                        Product.base_unit_id == unit.id,
+                        Product.selling_unit_id == unit.id,
+                        Product.net_quantity_unit_id == unit.id,
+                    ),
                 )
             ),
         ]

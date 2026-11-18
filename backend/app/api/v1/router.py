@@ -3,14 +3,13 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
-from app.api.v1 import attributes, categories, products, units, variants
+from app.api.v1 import attributes, categories, products, units
 
 router = APIRouter()
 router.include_router(units.router)
 router.include_router(categories.router)
 router.include_router(attributes.router)
 router.include_router(products.router)
-router.include_router(variants.router)
 
 
 @router.get("/health")
