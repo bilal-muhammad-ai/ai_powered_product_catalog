@@ -5,6 +5,7 @@ const links = [
   { to: "/categories", label: "Categories" },
   { to: "/units", label: "Units" },
   { to: "/inventory", label: "Inventory" },
+  { to: "/orders", label: "Orders" },
 ]
 
 export function Sidebar() {

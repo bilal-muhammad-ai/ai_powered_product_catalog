@@ -12,6 +12,10 @@ import { OpeningStockPage } from "../features/inventory/pages/OpeningStockPage"
 import { StockAdjustmentPage } from "../features/inventory/pages/StockAdjustmentPage"
 import { StockIssuePage } from "../features/inventory/pages/StockIssuePage"
 import { StockReceiptPage } from "../features/inventory/pages/StockReceiptPage"
+import { OrderDetailsPage } from "../features/orders/pages/OrderDetailsPage"
+import { OrderFormPage } from "../features/orders/pages/OrderFormPage"
+import { OrderListPage } from "../features/orders/pages/OrderListPage"
+import { OrderReceiptPage } from "../features/orders/pages/OrderReceiptPage"
 import { ProductFormPage } from "../features/products/ProductFormPage"
 import { ProductListPage } from "../features/products/ProductListPage"
 import { UnitsPage } from "../features/units/UnitsPage"
@@ -37,6 +41,11 @@ export function AppRouter() {
         <Route path="/inventory/transactions" element={<InventoryTransactionListPage />} />
         <Route path="/inventory/transactions/:transactionId" element={<InventoryTransactionDetailsPage />} />
         <Route path="/inventory/reports" element={<InventoryReportsPage />} />
+        <Route path="/orders" element={<OrderListPage />} />
+        <Route path="/orders/new" element={<OrderFormPage />} />
+        <Route path="/orders/:orderId/edit" element={<OrderFormPage />} />
+        <Route path="/orders/:orderId/receipt" element={<OrderReceiptPage />} />
+        <Route path="/orders/:orderId" element={<OrderDetailsPage />} />
       </Routes>
     </AppShell>
   )

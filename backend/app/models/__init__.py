@@ -9,6 +9,7 @@ from app.models.inventory import (
     StockBalance,
     UnitConversion,
 )
+from app.models.order import DiscountType, Order, OrderItem, OrderSequence, OrderStatus
 from app.models.product import Product, ProductAttributeMultiOption, ProductAttributeValue
 from app.models.unit import Unit
 
@@ -17,9 +18,14 @@ __all__ = [
     "Base",
     "Category",
     "CategoryAttribute",
+    "DiscountType",
     "InventorySequence",
     "InventoryTransaction",
     "InventoryTransactionItem",
+    "Order",
+    "OrderItem",
+    "OrderSequence",
+    "OrderStatus",
     "Product",
     "ProductAttributeMultiOption",
     "ProductAttributeValue",
