@@ -48,6 +48,7 @@ from app.services.attribute_schema import (
 from app.services.categories import create_category, update_category
 from app.services.products import save_product
 from app.services.units import create_unit
+from app.services.unit_conversion import sync_unit_conversions
 
 
 @dataclass
@@ -368,6 +369,7 @@ def seed(db: Session) -> SeedResult:
         units[spec.symbol] = unit_id
         bucket = result.created if created else result.skipped
         bucket.units += 1
+    sync_unit_conversions(db)
 
     categories: dict[str, uuid.UUID] = {}
     for spec in CATEGORIES:

@@ -9,7 +9,8 @@ from app.core.exceptions import CatalogueError
 from app.core.text import retired_key, slugify
 from app.models.attribute import AttributeOption, CategoryAttribute
 from app.models.category import Category
-from app.models.enums import DataType, ProductStatus
+from app.models.enums import DataType, InventoryTransactionStatus, ProductStatus
+from app.models.inventory import InventoryTransaction, InventoryTransactionItem, StockBalance
 from app.models.product import Product, ProductAttributeMultiOption, ProductAttributeValue
 from app.models.unit import Unit
 from app.schemas.product import AttributeValueOut, ProductDetail, ProductListItem, ProductWrite
@@ -133,6 +134,8 @@ def save_product(db: Session, data: ProductWrite, product: Product | None = None
         db.add(product)
         db.flush()
     else:
+        if product.selling_unit_id != data.selling_unit_id and _inventory_recorded(db, product.id):
+            raise CatalogueError("Selling unit cannot change after inventory has been recorded", 409)
         product.category_id = category.id
         product.name = data.name
         if data.slug:
@@ -185,9 +188,28 @@ def _write_product_values(db: Session, product: Product, values: list[PreparedVa
         )
 
 
+def _inventory_recorded(db: Session, product_id: uuid.UUID) -> bool:
+    if db.scalar(select(StockBalance.id).where(StockBalance.product_id == product_id)) is not None:
+        return True
+    posted = db.scalar(
+        select(InventoryTransactionItem.id)
+        .join(InventoryTransaction, InventoryTransaction.id == InventoryTransactionItem.transaction_id)
+        .where(
+            InventoryTransactionItem.product_id == product_id,
+            InventoryTransaction.status.in_(
+                (InventoryTransactionStatus.posted, InventoryTransactionStatus.reversed)
+            ),
+        )
+    )
+    return posted is not None
+
+
 def delete_product(db: Session, product: Product) -> None:
     from datetime import datetime, timezone
 
+    balance = db.scalar(select(StockBalance).where(StockBalance.product_id == product.id))
+    if balance is not None and balance.quantity_on_hand > 0:
+        raise CatalogueError("This product still has stock on hand", 409)
     product.deleted_at = datetime.now(timezone.utc)
     product.slug = retired_key(product.slug, product.id, 220)
     product.code = None
