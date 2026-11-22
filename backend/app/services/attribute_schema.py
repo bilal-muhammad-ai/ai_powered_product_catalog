@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session, selectinload
 from app.core.exceptions import CatalogueError
 from app.core.text import slugify
 from app.models.attribute import AttributeOption, CategoryAttribute
-from app.models.enums import AttributeScope, DataType
+from app.models.enums import DataType
 from app.models.product import ProductAttributeMultiOption, ProductAttributeValue
-from app.models.variant import VariantAttributeValue
 from app.schemas.attribute import (
     AttributeCreate,
     AttributeOptionCreate,
@@ -103,9 +102,7 @@ def assert_code_available(
         raise CatalogueError(f"Code '{code}' is already used by a child category", 409)
 
 
-def _check_bounds(data_type: DataType, scope: AttributeScope, min_value, max_value) -> None:
-    if data_type == DataType.multi_select and scope == AttributeScope.variant:
-        raise CatalogueError("Variant attributes cannot be multi-select", 422)
+def _check_bounds(min_value, max_value) -> None:
     if min_value is not None and max_value is not None and min_value > max_value:
         raise CatalogueError("Minimum value cannot be greater than the maximum", 422)
 
@@ -114,7 +111,6 @@ def attribute_in_use(db: Session, attribute_id: uuid.UUID) -> bool:
     return any(
         [
             db.scalar(select(ProductAttributeValue.id).where(ProductAttributeValue.attribute_id == attribute_id)),
-            db.scalar(select(VariantAttributeValue.id).where(VariantAttributeValue.attribute_id == attribute_id)),
             db.scalar(
                 select(ProductAttributeMultiOption.attribute_id).where(
                     ProductAttributeMultiOption.attribute_id == attribute_id
@@ -137,7 +133,7 @@ def get_attribute(db: Session, attribute_id: uuid.UUID) -> CategoryAttribute:
 
 def create_attribute(db: Session, category_id: uuid.UUID, data: AttributeCreate) -> CategoryAttribute:
     get_category(db, category_id)
-    _check_bounds(data.data_type, data.scope, data.min_value, data.max_value)
+    _check_bounds(data.min_value, data.max_value)
     if data.unit_id is not None:
         get_unit(db, data.unit_id)
     code = _code_for(data.name, data.code)
@@ -147,7 +143,6 @@ def create_attribute(db: Session, category_id: uuid.UUID, data: AttributeCreate)
         code=code,
         name=data.name.strip(),
         data_type=data.data_type,
-        scope=data.scope,
         unit_id=data.unit_id,
         is_required=data.is_required,
         is_filterable=data.is_filterable,
@@ -168,12 +163,11 @@ def update_attribute(db: Session, attribute: CategoryAttribute, data: AttributeU
     changes = data.model_dump(exclude_unset=True)
     in_use = attribute_in_use(db, attribute.id)
     data_type = changes.get("data_type", attribute.data_type)
-    scope = changes.get("scope", attribute.scope)
-    if in_use and (data_type != attribute.data_type or scope != attribute.scope):
-        raise CatalogueError("Data type and scope cannot change after values have been saved", 409)
+    if in_use and data_type != attribute.data_type:
+        raise CatalogueError("Data type cannot change after values have been saved", 409)
     min_value = changes["min_value"] if "min_value" in changes else attribute.min_value
     max_value = changes["max_value"] if "max_value" in changes else attribute.max_value
-    _check_bounds(data_type, scope, min_value, max_value)
+    _check_bounds(min_value, max_value)
     if changes.get("clear_unit"):
         attribute.unit_id = None
     elif "unit_id" in changes:
@@ -191,7 +185,6 @@ def update_attribute(db: Session, attribute: CategoryAttribute, data: AttributeU
     attribute.code = code
     attribute.inherit_to_children = inherit
     attribute.data_type = data_type
-    attribute.scope = scope
     if "name" in changes and changes["name"]:
         attribute.name = changes["name"].strip()
     for field in ("is_required", "is_filterable", "is_active", "sort_order", "help_text", "min_value", "max_value", "max_length"):
@@ -219,7 +212,6 @@ def to_attribute_out(attribute: CategoryAttribute, *, inherited: bool, active_on
         code=attribute.code,
         name=attribute.name,
         data_type=attribute.data_type,
-        scope=attribute.scope,
         unit_id=attribute.unit_id,
         is_required=attribute.is_required,
         is_filterable=attribute.is_filterable,
@@ -267,7 +259,6 @@ def _option_in_use(db: Session, option_id: uuid.UUID) -> bool:
     return any(
         [
             db.scalar(select(ProductAttributeValue.id).where(ProductAttributeValue.option_id == option_id)),
-            db.scalar(select(VariantAttributeValue.id).where(VariantAttributeValue.option_id == option_id)),
             db.scalar(
                 select(ProductAttributeMultiOption.option_id).where(ProductAttributeMultiOption.option_id == option_id)
             ),

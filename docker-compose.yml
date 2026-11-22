@@ -15,18 +15,31 @@ services:
       timeout: 5s
       retries: 20
 
+  qdrant:
+    image: qdrant/qdrant:v1.13.4
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+
   api:
     build: ./backend
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql+psycopg://catalogue:catalogue@db:5432/catalogue
-      CORS_ORIGINS: http://localhost:5173
+      QDRANT_URL: http://qdrant:6333
+      HF_HOME: /cache/huggingface
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - hf_cache:/cache/huggingface
     depends_on:
       db:
         condition: service_healthy
+      qdrant:
+        condition: service_started
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   web:
@@ -45,3 +58,5 @@ services:
 volumes:
   pgdata:
   web_node_modules:
+  qdrant_data:
+  hf_cache:

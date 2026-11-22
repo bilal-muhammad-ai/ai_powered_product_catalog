@@ -18,7 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDMixin
-from app.models.enums import AttributeScope, DataType
+from app.models.enums import DataType
 
 
 class CategoryAttribute(UUIDMixin, TimestampMixin, Base):
@@ -34,10 +34,6 @@ class CategoryAttribute(UUIDMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     data_type: Mapped[DataType] = mapped_column(
         Enum(DataType, name="attribute_data_type", native_enum=False, length=32),
-        nullable=False,
-    )
-    scope: Mapped[AttributeScope] = mapped_column(
-        Enum(AttributeScope, name="attribute_scope", native_enum=False, length=16),
         nullable=False,
     )
     unit_id: Mapped[uuid.UUID | None] = mapped_column(

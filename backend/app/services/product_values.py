@@ -1,4 +1,3 @@
-import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -8,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.attribute import AttributeOption, CategoryAttribute
-from app.models.enums import AttributeScope, DataType
+from app.models.enums import DataType
 from app.schemas.product import AttributeValueIn
 
 
@@ -21,30 +20,6 @@ class PreparedValue:
     value_date: date | None = None
     option_id: uuid.UUID | None = None
     option_ids: list[uuid.UUID] = field(default_factory=list)
-
-    def canonical(self) -> str:
-        data_type = self.attribute.data_type
-        if data_type == DataType.text:
-            return self.value_text or ""
-        if data_type == DataType.number and self.value_numeric is not None:
-            text = format(self.value_numeric, "f")
-            if "." in text:
-                text = text.rstrip("0").rstrip(".")
-            return text or "0"
-        if data_type == DataType.boolean:
-            return "true" if self.value_boolean else "false"
-        if data_type == DataType.date and self.value_date is not None:
-            return self.value_date.isoformat()
-        if data_type == DataType.single_select and self.option_id is not None:
-            return str(self.option_id)
-        return ",".join(str(option_id) for option_id in self.option_ids)
-
-
-def variant_key(values: list[PreparedValue]) -> str:
-    payload = "|".join(
-        f"{item.attribute.id}:{item.canonical()}" for item in sorted(values, key=lambda item: str(item.attribute.id))
-    )
-    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 class FieldErrors:
@@ -103,7 +78,6 @@ def collect_values(
     allowed: dict[uuid.UUID, CategoryAttribute],
     errors: FieldErrors,
     prefix: str,
-    scope: AttributeScope,
 ) -> list[PreparedValue]:
     seen: dict[uuid.UUID, object] = {}
     for item in raw_values:
@@ -112,7 +86,7 @@ def collect_values(
             continue
         seen[item.attribute_id] = item.value
         attribute = allowed.get(item.attribute_id)
-        if attribute is None or attribute.scope != scope:
+        if attribute is None:
             errors.add(prefix, "One or more attributes do not belong to this category")
 
     options = load_options(db, _collect_option_ids(raw_values))
@@ -180,9 +154,6 @@ def _parse_value(
             return None
         return PreparedValue(attribute=attribute, option_id=option.id)
     if data_type == DataType.multi_select:
-        if attribute.scope != AttributeScope.product:
-            errors.add(field_name, "Variant attributes cannot be multi-select")
-            return None
         if not isinstance(value, list):
             errors.add(field_name, f"{attribute.name} must be a list of options")
             return None

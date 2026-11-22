@@ -1,4 +1,4 @@
-from app.models.enums import AttributeScope, DataType
+from app.models.enums import DataType
 from app.schemas.attribute import AttributeCreate
 from app.schemas.category import CategoryCreate
 from app.services.attribute_schema import effective_attributes
@@ -16,7 +16,6 @@ def test_effective_attributes_follow_inheritance(db):
             name="Washed",
             code="washed",
             data_type=DataType.boolean,
-            scope=AttributeScope.product,
             inherit_to_children=True,
         ),
     )
@@ -27,7 +26,6 @@ def test_effective_attributes_follow_inheritance(db):
             name="Private note",
             code="private_note",
             data_type=DataType.text,
-            scope=AttributeScope.product,
             inherit_to_children=False,
         ),
     )
@@ -38,7 +36,6 @@ def test_effective_attributes_follow_inheritance(db):
             name="Nominal size",
             code="nominal_size",
             data_type=DataType.text,
-            scope=AttributeScope.product,
         ),
     )
 

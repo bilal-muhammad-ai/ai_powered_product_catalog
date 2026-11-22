@@ -9,7 +9,7 @@ import {
   listCategories,
   updateAttribute,
 } from "../../api/resources"
-import type { Attribute, AttributeScope, DataType } from "../../api/types"
+import type { Attribute, DataType } from "../../api/types"
 import { ErrorNote, Field, PageHeader } from "../../components/ui"
 import { flattenCategories } from "../../lib/tree"
 
@@ -23,7 +23,6 @@ export function AttributesPage() {
   const [name, setName] = useState("")
   const [code, setCode] = useState("")
   const [dataType, setDataType] = useState<DataType>("text")
-  const [scope, setScope] = useState<AttributeScope>("product")
   const [required, setRequired] = useState(false)
   const [optionLabel, setOptionLabel] = useState<Record<string, string>>({})
 
@@ -49,7 +48,6 @@ export function AttributesPage() {
         name,
         code: code || null,
         data_type: dataType,
-        scope,
         is_required: required,
         is_filterable: true,
         inherit_to_children: true,
@@ -78,7 +76,7 @@ export function AttributesPage() {
         }
       />
       <ErrorNote message={error} />
-      <form onSubmit={onCreate} className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-5">
+      <form onSubmit={onCreate} className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-4">
         <Field label="Name">
           <input className="field" value={name} onChange={(event) => setName(event.target.value)} required />
         </Field>
@@ -92,12 +90,6 @@ export function AttributesPage() {
                 {type}
               </option>
             ))}
-          </select>
-        </Field>
-        <Field label="Applies to">
-          <select className="field" value={scope} onChange={(event) => setScope(event.target.value as AttributeScope)}>
-            <option value="product">Product</option>
-            <option value="variant">Variant</option>
           </select>
         </Field>
         <div className="flex items-end gap-3">
@@ -130,7 +122,7 @@ export function AttributesPage() {
                 {attribute.name} <span className="font-mono text-xs text-stone-500">{attribute.code}</span>
               </p>
               <p className="text-stone-500">
-                From {attribute.owner_category_name} · {attribute.scope} · {attribute.data_type}
+                From {attribute.owner_category_name} · {attribute.data_type}
                 {attribute.is_active ? "" : " · inactive"}
               </p>
             </article>
@@ -167,7 +159,7 @@ function AttributeList({
                 {attribute.name} <span className="font-mono text-xs text-stone-500">{attribute.code}</span>
               </p>
               <p className="text-sm text-stone-500">
-                {attribute.scope} · {attribute.data_type}
+                {attribute.data_type}
                 {attribute.is_required ? " · required" : ""}
                 {attribute.is_active ? "" : " · inactive"}
               </p>

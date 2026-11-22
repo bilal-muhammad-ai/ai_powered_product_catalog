@@ -52,7 +52,6 @@ def upgrade() -> None:
     sa.Column('code', sa.String(length=80), nullable=False),
     sa.Column('name', sa.String(length=160), nullable=False),
     sa.Column('data_type', sa.Enum('text', 'number', 'boolean', 'date', 'single_select', 'multi_select', name='attribute_data_type', native_enum=False, length=32), nullable=False),
-    sa.Column('scope', sa.Enum('product', 'variant', name='attribute_scope', native_enum=False, length=16), nullable=False),
     sa.Column('unit_id', sa.Uuid(), nullable=True),
     sa.Column('is_required', sa.Boolean(), server_default='false', nullable=False),
     sa.Column('is_filterable', sa.Boolean(), server_default='false', nullable=False),
@@ -74,19 +73,35 @@ def upgrade() -> None:
     op.create_table('products',
     sa.Column('category_id', sa.Uuid(), nullable=False),
     sa.Column('base_unit_id', sa.Uuid(), nullable=True),
+    sa.Column('sku', sa.String(length=64), nullable=False),
+    sa.Column('barcode', sa.String(length=64), nullable=True),
     sa.Column('name', sa.String(length=200), nullable=False),
     sa.Column('slug', sa.String(length=220), nullable=False),
     sa.Column('code', sa.String(length=64), nullable=True),
     sa.Column('description', sa.Text(), nullable=True),
+    sa.Column('selling_unit_id', sa.Uuid(), nullable=False),
+    sa.Column('net_quantity', sa.Numeric(precision=14, scale=4), nullable=True),
+    sa.Column('net_quantity_unit_id', sa.Uuid(), nullable=True),
+    sa.Column('cost_price', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('selling_price', sa.Numeric(precision=14, scale=2), nullable=False),
+    sa.Column('currency_code', sa.String(length=3), server_default='PKR', nullable=False),
     sa.Column('status', sa.Enum('draft', 'active', 'archived', name='product_status', native_enum=False, length=16), nullable=False),
     sa.Column('deleted_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
+    sa.CheckConstraint('cost_price >= 0', name='ck_product_cost_nonnegative'),
+    sa.CheckConstraint('selling_price >= 0', name='ck_product_price_nonnegative'),
+    sa.CheckConstraint('net_quantity IS NULL OR net_quantity > 0', name='ck_product_net_quantity_positive'),
+    sa.CheckConstraint('net_quantity IS NULL OR net_quantity_unit_id IS NOT NULL', name='ck_product_net_quantity_unit'),
     sa.ForeignKeyConstraint(['base_unit_id'], ['units.id'], ondelete='RESTRICT'),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['net_quantity_unit_id'], ['units.id'], ondelete='RESTRICT'),
+    sa.ForeignKeyConstraint(['selling_unit_id'], ['units.id'], ondelete='RESTRICT'),
     sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('barcode'),
     sa.UniqueConstraint('code'),
+    sa.UniqueConstraint('sku'),
     sa.UniqueConstraint('slug')
     )
     op.create_index('ix_products_category_id', 'products', ['category_id'], unique=False)
@@ -105,34 +120,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('attribute_id', 'value', name='uq_attribute_option_value')
     )
     op.create_index('ix_attribute_options_attribute_id', 'attribute_options', ['attribute_id'], unique=False)
-    op.create_table('product_variants',
-    sa.Column('product_id', sa.Uuid(), nullable=False),
-    sa.Column('sku', sa.String(length=64), nullable=False),
-    sa.Column('barcode', sa.String(length=64), nullable=True),
-    sa.Column('name', sa.String(length=200), nullable=True),
-    sa.Column('selling_unit_id', sa.Uuid(), nullable=False),
-    sa.Column('net_quantity', sa.Numeric(precision=14, scale=4), nullable=True),
-    sa.Column('net_quantity_unit_id', sa.Uuid(), nullable=True),
-    sa.Column('cost_price', sa.Numeric(precision=14, scale=2), nullable=False),
-    sa.Column('selling_price', sa.Numeric(precision=14, scale=2), nullable=False),
-    sa.Column('currency_code', sa.String(length=3), server_default='PKR', nullable=False),
-    sa.Column('is_active', sa.Boolean(), server_default='true', nullable=False),
-    sa.Column('sort_order', sa.Integer(), server_default='0', nullable=False),
-    sa.Column('variant_key', sa.String(length=64), nullable=False),
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.CheckConstraint('cost_price >= 0', name='ck_variant_cost_nonnegative'),
-    sa.CheckConstraint('selling_price >= 0', name='ck_variant_price_nonnegative'),
-    sa.ForeignKeyConstraint(['net_quantity_unit_id'], ['units.id'], ondelete='RESTRICT'),
-    sa.ForeignKeyConstraint(['product_id'], ['products.id'], ondelete='CASCADE'),
-    sa.ForeignKeyConstraint(['selling_unit_id'], ['units.id'], ondelete='RESTRICT'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('barcode'),
-    sa.UniqueConstraint('product_id', 'variant_key', name='uq_product_variant_key'),
-    sa.UniqueConstraint('sku')
-    )
-    op.create_index('ix_product_variants_product_id', 'product_variants', ['product_id'], unique=False)
     op.create_table('product_attribute_multi_options',
     sa.Column('product_id', sa.Uuid(), nullable=False),
     sa.Column('attribute_id', sa.Uuid(), nullable=False),
@@ -160,40 +147,16 @@ def upgrade() -> None:
     op.create_index('ix_pav_attr_numeric', 'product_attribute_values', ['attribute_id', 'value_numeric'], unique=False)
     op.create_index('ix_pav_attr_option', 'product_attribute_values', ['attribute_id', 'option_id'], unique=False)
     op.create_index('ix_pav_attr_text', 'product_attribute_values', ['attribute_id', 'value_text'], unique=False)
-    op.create_table('variant_attribute_values',
-    sa.Column('variant_id', sa.Uuid(), nullable=False),
-    sa.Column('attribute_id', sa.Uuid(), nullable=False),
-    sa.Column('value_text', sa.Text(), nullable=True),
-    sa.Column('value_numeric', sa.Numeric(precision=14, scale=4), nullable=True),
-    sa.Column('value_boolean', sa.Boolean(), nullable=True),
-    sa.Column('value_date', sa.Date(), nullable=True),
-    sa.Column('option_id', sa.Uuid(), nullable=True),
-    sa.Column('id', sa.Uuid(), nullable=False),
-    sa.ForeignKeyConstraint(['attribute_id'], ['category_attributes.id'], ondelete='RESTRICT'),
-    sa.ForeignKeyConstraint(['option_id'], ['attribute_options.id'], ondelete='RESTRICT'),
-    sa.ForeignKeyConstraint(['variant_id'], ['product_variants.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('variant_id', 'attribute_id', name='uq_variant_attribute_value')
-    )
-    op.create_index('ix_vav_attr_numeric', 'variant_attribute_values', ['attribute_id', 'value_numeric'], unique=False)
-    op.create_index('ix_vav_attr_option', 'variant_attribute_values', ['attribute_id', 'option_id'], unique=False)
-    op.create_index('ix_vav_attr_text', 'variant_attribute_values', ['attribute_id', 'value_text'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index('ix_vav_attr_text', table_name='variant_attribute_values')
-    op.drop_index('ix_vav_attr_option', table_name='variant_attribute_values')
-    op.drop_index('ix_vav_attr_numeric', table_name='variant_attribute_values')
-    op.drop_table('variant_attribute_values')
     op.drop_index('ix_pav_attr_text', table_name='product_attribute_values')
     op.drop_index('ix_pav_attr_option', table_name='product_attribute_values')
     op.drop_index('ix_pav_attr_numeric', table_name='product_attribute_values')
     op.drop_table('product_attribute_values')
     op.drop_table('product_attribute_multi_options')
-    op.drop_index('ix_product_variants_product_id', table_name='product_variants')
-    op.drop_table('product_variants')
     op.drop_index('ix_attribute_options_attribute_id', table_name='attribute_options')
     op.drop_table('attribute_options')
     op.drop_index('ix_products_status', table_name='products')
