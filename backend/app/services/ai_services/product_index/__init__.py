@@ -1,1 +1,1 @@
-"""Product embedding index. Written only by the reindex script."""
+"""Product embedding index. The reindex script writes it; hybrid retrieval reads it by product name."""
