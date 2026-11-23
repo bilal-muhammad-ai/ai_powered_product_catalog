@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_db
 from app.api.v1 import attributes, categories, inventory, products, units
-from app.api.v1.ai.order_structure import router as order_structure_router
+from app.api.v1.ai.create_order_api import router as create_order_router
 from app.api.v1.ai.product_ingestion import router as ai_router
 from app.api.v1.order import router as order_router
 
@@ -16,7 +16,7 @@ router.include_router(products.router)
 router.include_router(inventory.router)
 router.include_router(order_router)
 router.include_router(ai_router)
-router.include_router(order_structure_router)
+router.include_router(create_order_router)
 
 
 @router.get("/health")

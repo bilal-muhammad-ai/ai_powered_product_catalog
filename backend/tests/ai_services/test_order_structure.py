@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 from app.api.v1.ai.order_structure import get_english_order_agent
 from app.core.exceptions import CatalogueError
 from app.main import app
+from app.services.ai_services.order_agent import order_service
 from app.services.ai_services.order_agent.order_agent import parse_structure, structure_order
+from app.services.ai_services.product_index.retriever import RetrievedProduct
 
 
 class FakeChat:
@@ -20,6 +22,35 @@ class FakeChat:
 
 def _reply(payload: dict) -> str:
     return "```json\n" + json.dumps(payload) + "\n```"
+
+
+def _product_json(name: str) -> dict:
+    return {
+        "product_id": f"id-{name}",
+        "name": name,
+        "category_id": "cat",
+        "category_name": "Cement",
+        "selling_unit_id": "unit",
+        "selling_unit_symbol": "bag",
+        "selling_unit_name": "Bag",
+        "score": 0.5,
+    }
+
+
+class _RouteRetriever:
+    def retrieve(self, product_name: str, limit: int = 5) -> list[RetrievedProduct]:
+        return [
+            RetrievedProduct(
+                product_id=f"id-{product_name}",
+                name=product_name,
+                category_id="cat",
+                category_name="Cement",
+                selling_unit_id="unit",
+                selling_unit_symbol="bag",
+                selling_unit_name="Bag",
+                score=0.5,
+            )
+        ]
 
 
 def test_english_order_becomes_two_items():
@@ -54,7 +85,7 @@ def test_invalid_reply_is_rejected():
         raise AssertionError("expected a 502")
 
 
-def test_order_structure_route_returns_items():
+def test_order_structure_route_returns_items(monkeypatch):
     chat = FakeChat(
         _reply(
             {
@@ -67,6 +98,7 @@ def test_order_structure_route_returns_items():
         )
     )
     app.dependency_overrides[get_english_order_agent] = lambda: chat
+    monkeypatch.setattr(order_service, "get_product_retriever", lambda: _RouteRetriever())
     try:
         response = TestClient(app).post(
             "/api/v1/ai/order_structure",
@@ -79,7 +111,17 @@ def test_order_structure_route_returns_items():
     assert response.json() == {
         "intent": "create_order",
         "items": [
-            {"product_name": "Lucky Cement", "quantity": 10, "unit": "bag"},
-            {"product_name": "Bajri", "quantity": 30, "unit": "ft"},
+            {
+                "product_name": "Lucky Cement",
+                "quantity": 10,
+                "unit": "bag",
+                "products": [_product_json("Lucky Cement")],
+            },
+            {
+                "product_name": "Bajri",
+                "quantity": 30,
+                "unit": "ft",
+                "products": [_product_json("Bajri")],
+            },
         ],
     }

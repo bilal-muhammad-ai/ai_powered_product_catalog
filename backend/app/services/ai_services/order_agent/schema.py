@@ -44,3 +44,23 @@ class OrderItemDraft(BaseModel):
 class StructuredOrder(BaseModel):
     intent: Literal["create_order"] = "create_order"
     items: list[OrderItemDraft] = Field(default_factory=list)
+
+
+class ProductMatch(BaseModel):
+    product_id: str
+    name: str
+    category_id: str
+    category_name: str
+    selling_unit_id: str
+    selling_unit_symbol: str
+    selling_unit_name: str
+    score: float
+
+
+class MatchedOrderItem(OrderItemDraft):
+    products: list[ProductMatch] = Field(default_factory=list)
+
+
+class MatchedOrder(BaseModel):
+    intent: Literal["create_order"] = "create_order"
+    items: list[MatchedOrderItem] = Field(default_factory=list)
