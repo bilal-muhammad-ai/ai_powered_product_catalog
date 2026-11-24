@@ -78,6 +78,7 @@ export function OrderFormPage() {
           initialNotes={notes}
           initialDiscountType={discountType}
           initialDiscountValue={discountValue}
+          assist={!orderId}
           onSubmit={save}
           onCancel={() => navigate("/orders")}
         />

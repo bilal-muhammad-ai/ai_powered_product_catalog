@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react"
 import { listUnits } from "../../../api/resources"
 import type { Unit } from "../../../api/types"
 import { Field } from "../../../components/ui"
-import type { DiscountType, OrderBody, OrderCatalogHit } from "../api"
+import { lineKey } from "../ai-order"
+import type { AiProductMatch, DiscountType, OrderBody, OrderCatalogHit } from "../api"
 import { discountError, formatPkr, formatQty, orderAmounts, priceError, quantityError, todayIso } from "../logic"
+import { AiOrderQuery } from "./AiOrderQuery"
 import { OrderProductSearch } from "./OrderProductSearch"
 
 export type EditorLine = {
@@ -24,6 +26,7 @@ export function OrderEditor({
   initialNotes = "",
   initialDiscountType = "AMOUNT",
   initialDiscountValue = "0",
+  assist = false,
   onSubmit,
   onCancel,
 }: {
@@ -32,6 +35,7 @@ export function OrderEditor({
   initialNotes?: string
   initialDiscountType?: DiscountType
   initialDiscountValue?: string
+  assist?: boolean
   onSubmit: (body: OrderBody, confirm: boolean) => Promise<void>
   onCancel: () => void
 }) {
@@ -43,6 +47,8 @@ export function OrderEditor({
   const [discountValue, setDiscountValue] = useState(initialDiscountValue)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [choicePending, setChoicePending] = useState(false)
+  const [excluded, setExcluded] = useState<string[]>([])
 
   useEffect(() => {
     listUnits(false)
@@ -83,6 +89,31 @@ export function OrderEditor({
     ])
   }
 
+  function upsertAiLine(index: number, match: AiProductMatch, price: string, quantity: string) {
+    const key = lineKey(index)
+    setError(null)
+    setLines((current) => {
+      const existing = current.find((line) => line.key === key)
+      const next: EditorLine = {
+        key,
+        productId: match.product_id,
+        name: match.name,
+        sku: "",
+        unitId: match.selling_unit_id,
+        quantity: existing?.quantity ?? quantity,
+        unitPrice: price,
+        discountType: existing?.discountType ?? "AMOUNT",
+        discountValue: existing?.discountValue ?? "0",
+      }
+      if (!existing) return [...current, next]
+      return current.map((line) => (line.key === key ? next : line))
+    })
+  }
+
+  function clearAiLines() {
+    setLines((current) => current.filter((line) => !line.key.startsWith("ai-")))
+  }
+
   function validate(): string | null {
     if (lines.length === 0) return "Add at least one product"
     for (const line of lines) {
@@ -101,6 +132,10 @@ export function OrderEditor({
   }
 
   async function submit(confirm: boolean) {
+    if (choicePending) {
+      setError("Choose a product for each requested item")
+      return
+    }
     const problem = validate()
     if (problem) {
       setError(problem)
@@ -155,6 +190,11 @@ export function OrderEditor({
           </div>
         </Field>
       </div>
+      {assist ? (
+        <div className="mb-4">
+          <AiOrderQuery onUpsert={upsertAiLine} onClear={clearAiLines} onPendingChange={setChoicePending} onExcludedChange={setExcluded} />
+        </div>
+      ) : null}
       <div className="mb-4 rounded-lg border border-line bg-white p-4">
         <OrderProductSearch onSelect={addHit} />
       </div>
@@ -185,7 +225,7 @@ export function OrderEditor({
                   <tr key={line.key} className="border-t border-line">
                     <td className="px-4 py-3">
                       <div className="font-medium">{line.name}</div>
-                      <div className="text-xs text-stone-500">{line.sku}</div>
+                      {line.sku ? <div className="text-xs text-stone-500">{line.sku}</div> : null}
                     </td>
                     <td className="px-4 py-3">
                       <input
@@ -275,11 +315,16 @@ export function OrderEditor({
       <Field label="Notes">
         <textarea className="field mt-3" rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} />
       </Field>
+      {excluded.length > 0 ? (
+        <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+          Excluded from this order: {excluded.join(", ")}. These items are not in the catalogue.
+        </p>
+      ) : null}
       <div className="mt-4 flex flex-wrap gap-2">
-        <button className="btn" type="submit" disabled={saving}>
+        <button className="btn" type="submit" disabled={saving || choicePending}>
           {saving ? "Saving…" : "Confirm order"}
         </button>
-        <button className="btn-ghost" type="button" disabled={saving} onClick={() => void submit(false)}>
+        <button className="btn-ghost" type="button" disabled={saving || choicePending} onClick={() => void submit(false)}>
           Save draft
         </button>
         <button className="btn-ghost" type="button" onClick={onCancel}>

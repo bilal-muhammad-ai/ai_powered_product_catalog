@@ -137,3 +137,30 @@ export function completeOrder(orderId: string) {
 export function searchOrderCatalog(q: string) {
   return api<OrderCatalogHit[]>(`/api/v1/orders/catalog${query({ q })}`)
 }
+
+export type AiProductMatch = {
+  product_id: string
+  name: string
+  category_id: string
+  category_name: string
+  selling_unit_id: string
+  selling_unit_symbol: string
+  selling_unit_name: string
+  score: number
+}
+
+export type AiOrderItem = {
+  product_name: string | null
+  quantity: number | null
+  unit: string | null
+  products: AiProductMatch[]
+}
+
+export type AiOrder = {
+  intent: "create_order"
+  items: AiOrderItem[]
+}
+
+export function suggestOrder(text: string) {
+  return api<AiOrder>("/api/v1/ai/create_order", { method: "POST", body: JSON.stringify({ text }) })
+}
