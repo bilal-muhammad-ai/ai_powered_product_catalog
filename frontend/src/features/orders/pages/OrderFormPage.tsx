@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useLocation, useNavigate, useParams } from "react-router-dom"
-import { ErrorNote, PageHeader } from "../../../components/ui"
+import { ErrorNote, LoadingState, PageHeader } from "../../../components/ui"
 import { confirmOrder, createOrder, readOrder, updateOrder, type OrderBody } from "../api"
 import { OrderEditor, type EditorLine } from "../components/OrderEditor"
 
@@ -68,7 +68,7 @@ export function OrderFormPage() {
     <div>
       <PageHeader
         title={orderId ? "Edit draft order" : "Create order"}
-        lede="Choose products, set the price for this order, and save a draft or confirm it."
+        lede="Add products, set prices and discounts, then save a draft or confirm the order."
       />
       <ErrorNote message={error} />
       {lines ? (
@@ -83,7 +83,7 @@ export function OrderFormPage() {
           onCancel={() => navigate("/orders")}
         />
       ) : (
-        <p className="text-sm text-stone-500">Loading order…</p>
+        <LoadingState label="Loading order…" />
       )}
     </div>
   )

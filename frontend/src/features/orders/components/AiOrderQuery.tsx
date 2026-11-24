@@ -1,6 +1,7 @@
+import { Sparkles } from "lucide-react"
 import { useEffect, useState } from "react"
 import { getProduct } from "../../../api/resources"
-import { Field } from "../../../components/ui"
+import { Button, Field } from "../../../components/ui"
 import { suggestOrder, type AiProductMatch } from "../api"
 import {
   choiceIndexes,
@@ -132,19 +133,28 @@ export function AiOrderQuery({
   }
 
   return (
-    <div className="rounded-lg border border-copper bg-paper p-4">
+    <div className="rounded-xl border border-pine/20 bg-white p-4 shadow-card">
+      <div className="mb-4 flex items-start gap-3 border-b border-line pb-4">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-pine text-stone-100">
+          <Sparkles className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <div>
+          <p className="text-sm font-semibold text-ink">Assisted entry</p>
+          <p className="text-sm text-stone-500">Match catalogue products from a short description.</p>
+        </div>
+      </div>
       <Field label="Describe the order">
         <textarea
-          className="field"
+          className="field bg-paper"
           rows={3}
           value={text}
           placeholder={PLACEHOLDER}
           onChange={(event) => setText(event.target.value)}
         />
       </Field>
-      <button className="btn mt-3" type="button" disabled={loading || choosing || text.trim().length === 0} onClick={() => void find()}>
+      <Button className="mt-3" disabled={loading || choosing || text.trim().length === 0} onClick={() => void find()}>
         {loading ? "Finding products…" : "Find products"}
-      </button>
+      </Button>
       {error ? <p className="mt-3 text-sm text-red-800">{error}</p> : null}
       {items.some((item) => item.products.length === 1 || item.status === "unavailable") ? (
         <ul className="mt-4 grid gap-2">
@@ -153,23 +163,23 @@ export function AiOrderQuery({
               const match = item.products[0]
               const problem = failed[item.index]
               return (
-                <li key={item.index} className="rounded-md border border-pine/30 bg-white px-3 py-2 text-sm">
+                <li key={item.index} className="rounded-lg border border-pine/20 bg-paper px-3 py-2 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-pine">{problem ? "Price unavailable" : "Selected"}</p>
                   <p className="font-medium">{match.name}</p>
                   <p className="text-stone-600">
                     {item.label} · Quantity {item.quantity} {match.selling_unit_symbol}
                   </p>
                   {problem ? (
-                    <button className="btn-ghost mt-2" type="button" onClick={() => void retry(item, match)}>
+                    <Button variant="ghost" className="mt-2" onClick={() => void retry(item, match)}>
                       Retry
-                    </button>
+                    </Button>
                   ) : null}
                 </li>
               )
             }
             if (item.status !== "unavailable") return null
             return (
-              <li key={item.index} className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              <li key={item.index} className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
                 <p className="font-medium">
                   {item.label}
                   {item.spokenUnit ? ` · Quantity ${item.quantity} ${item.spokenUnit}` : ` · Quantity ${item.quantity}`}
@@ -181,8 +191,8 @@ export function AiOrderQuery({
         </ul>
       ) : null}
       {current && position ? (
-        <fieldset className="mt-4">
-          <legend className="text-sm font-semibold text-ink">
+        <fieldset className="mt-4 rounded-lg border border-line bg-paper p-3">
+          <legend className="px-1 text-sm font-semibold text-ink">
             Selecting product {position.current} of {position.total}
           </legend>
           <p className="mt-1 text-sm text-stone-600">
@@ -195,10 +205,11 @@ export function AiOrderQuery({
               return (
                 <label
                   key={match.product_id}
-                  className={`flex cursor-pointer items-start gap-3 rounded-md border bg-white px-3 py-2 text-sm ${selected ? "border-copper" : "border-line"}`}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border bg-white px-3 py-2 text-sm ${selected ? "border-copper ring-2 ring-copper/15" : "border-line"}`}
                 >
                   <input
                     type="radio"
+                    className="mt-1 accent-copper"
                     name={`ai-choice-${current.index}`}
                     value={match.product_id}
                     checked={selected}
@@ -216,9 +227,8 @@ export function AiOrderQuery({
             })}
           </div>
           <div className="mt-3 flex gap-2">
-            <button
-              className="btn-ghost"
-              type="button"
+            <Button
+              variant="ghost"
               disabled={previousChoice(items, current.index) === null}
               onClick={() => {
                 const previous = previousChoice(items, current.index)
@@ -226,10 +236,9 @@ export function AiOrderQuery({
               }}
             >
               Back
-            </button>
-            <button
-              className="btn-ghost"
-              type="button"
+            </Button>
+            <Button
+              variant="ghost"
               disabled={current.selectedProductId === null || nextChoice(items, current.index) === null}
               onClick={() => {
                 const following = nextChoice(items, current.index)
@@ -237,14 +246,14 @@ export function AiOrderQuery({
               }}
             >
               Next
-            </button>
+            </Button>
           </div>
         </fieldset>
       ) : null}
       {cursor === null && choices.length > 0 && !hasPendingChoice(items) ? (
-        <button className="btn-ghost mt-4" type="button" onClick={review}>
+        <Button variant="ghost" className="mt-4" onClick={review}>
           Review choices
-        </button>
+        </Button>
       ) : null}
     </div>
   )

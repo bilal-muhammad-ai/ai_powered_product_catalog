@@ -1,7 +1,8 @@
+import { Trash2 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { listUnits } from "../../../api/resources"
 import type { Unit } from "../../../api/types"
-import { Field } from "../../../components/ui"
+import { Button, Card, Field } from "../../../components/ui"
 import { lineKey } from "../ai-order"
 import type { AiProductMatch, DiscountType, OrderBody, OrderCatalogHit } from "../api"
 import { discountError, formatPkr, formatQty, orderAmounts, priceError, quantityError, todayIso } from "../logic"
@@ -175,161 +176,199 @@ export function OrderEditor({
         void submit(true)
       }}
     >
-      {error ? <p className="mb-4 whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
-      <div className="mb-4 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-2">
-        <Field label="Date">
-          <input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
-        </Field>
-        <Field label="Order discount">
-          <div className="flex gap-2">
-            <select className="field" value={discountType} onChange={(event) => setDiscountType(event.target.value as DiscountType)}>
-              <option value="AMOUNT">Amount</option>
-              <option value="PERCENT">Percent</option>
-            </select>
-            <input className="field" inputMode="decimal" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} />
-          </div>
-        </Field>
-      </div>
-      {assist ? (
-        <div className="mb-4">
-          <AiOrderQuery onUpsert={upsertAiLine} onClear={clearAiLines} onPendingChange={setChoicePending} onExcludedChange={setExcluded} />
-        </div>
-      ) : null}
-      <div className="mb-4 rounded-lg border border-line bg-white p-4">
-        <OrderProductSearch onSelect={addHit} />
-      </div>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[860px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
-            <tr>
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">Quantity</th>
-              <th className="px-4 py-3">Unit</th>
-              <th className="px-4 py-3">Price</th>
-              <th className="px-4 py-3">Discount</th>
-              <th className="px-4 py-3">Total</th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody>
-            {lines.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-stone-500" colSpan={7}>
-                  Search for a product to add it.
-                </td>
-              </tr>
-            ) : (
-              lines.map((line, index) => {
-                const amounts = summary.lines[index]
-                return (
-                  <tr key={line.key} className="border-t border-line">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{line.name}</div>
-                      {line.sku ? <div className="text-xs text-stone-500">{line.sku}</div> : null}
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        className="field w-24"
-                        inputMode="decimal"
-                        value={line.quantity}
-                        onChange={(event) =>
-                          setLines((current) => current.map((item) => (item.key === line.key ? { ...item, quantity: event.target.value } : item)))
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        className="field"
-                        value={line.unitId}
-                        onChange={(event) =>
-                          setLines((current) => current.map((item) => (item.key === line.key ? { ...item, unitId: event.target.value } : item)))
-                        }
-                      >
-                        {units.some((unit) => unit.id === line.unitId) ? null : <option value={line.unitId}>{line.unitId}</option>}
-                        {units.map((unit) => (
-                          <option key={unit.id} value={unit.id}>
-                            {unit.symbol}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    <td className="px-4 py-3">
-                      <input
-                        className="field w-28"
-                        inputMode="decimal"
-                        value={line.unitPrice}
-                        onChange={(event) =>
-                          setLines((current) => current.map((item) => (item.key === line.key ? { ...item, unitPrice: event.target.value } : item)))
-                        }
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex gap-2">
-                        <select
-                          className="field"
-                          value={line.discountType}
-                          onChange={(event) =>
-                            setLines((current) =>
-                              current.map((item) =>
-                                item.key === line.key ? { ...item, discountType: event.target.value as DiscountType } : item,
-                              ),
-                            )
-                          }
-                        >
-                          <option value="AMOUNT">Rs</option>
-                          <option value="PERCENT">%</option>
-                        </select>
-                        <input
-                          className="field w-20"
-                          inputMode="decimal"
-                          value={line.discountValue}
-                          onChange={(event) =>
-                            setLines((current) =>
-                              current.map((item) => (item.key === line.key ? { ...item, discountValue: event.target.value } : item))
-                            )
-                          }
-                        />
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">{formatPkr(amounts?.total ?? 0)}</td>
-                    <td className="px-4 py-3 text-right">
-                      <button type="button" className="btn-danger" onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))}>
-                        Remove
-                      </button>
-                    </td>
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <div className="min-w-0 space-y-5 xl:col-start-1 xl:row-start-1">
+          {error ? <p className="whitespace-pre-line rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
+          <Card className="grid gap-4 p-4 md:grid-cols-2">
+            <Field label="Date">
+              <input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+            </Field>
+            <Field label="Order discount">
+              <div className="flex gap-2">
+                <select className="field" value={discountType} onChange={(event) => setDiscountType(event.target.value as DiscountType)}>
+                  <option value="AMOUNT">Amount</option>
+                  <option value="PERCENT">Percent</option>
+                </select>
+                <input className="field" inputMode="decimal" value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} />
+              </div>
+            </Field>
+          </Card>
+          {assist ? <AiOrderQuery onUpsert={upsertAiLine} onClear={clearAiLines} onPendingChange={setChoicePending} onExcludedChange={setExcluded} /> : null}
+          <Card className="p-4">
+            <OrderProductSearch onSelect={addHit} />
+          </Card>
+          <Card className="overflow-hidden">
+            <div className="border-b border-line px-4 py-3">
+              <h2 className="font-display text-xl text-ink">Order items</h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[860px] text-left text-sm">
+                <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold">Product</th>
+                    <th className="px-4 py-3 font-semibold">Quantity</th>
+                    <th className="px-4 py-3 font-semibold">Unit</th>
+                    <th className="px-4 py-3 font-semibold">Price</th>
+                    <th className="px-4 py-3 font-semibold">Discount</th>
+                    <th className="px-4 py-3 font-semibold">Total</th>
+                    <th className="px-4 py-3 font-semibold">
+                      <span className="sr-only">Actions</span>
+                    </th>
                   </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="mt-4 grid gap-2 rounded-lg border border-line bg-white p-4 text-sm md:grid-cols-2">
-        <p>Items: {lines.length}</p>
-        <p>Quantity: {formatQty(summary.quantity)}</p>
-        <p>Subtotal: {formatPkr(summary.subtotal)}</p>
-        <p>Item discounts: {formatPkr(summary.itemDiscount)}</p>
-        <p>Order discount: {formatPkr(summary.orderDiscount)}</p>
-        <p className="font-semibold text-ink">Grand total: {formatPkr(summary.grandTotal)}</p>
-      </div>
-      <Field label="Notes">
-        <textarea className="field mt-3" rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} />
-      </Field>
-      {excluded.length > 0 ? (
-        <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-          Excluded from this order: {excluded.join(", ")}. These items are not in the catalogue.
-        </p>
-      ) : null}
-      <div className="mt-4 flex flex-wrap gap-2">
-        <button className="btn" type="submit" disabled={saving || choicePending}>
-          {saving ? "Saving…" : "Confirm order"}
-        </button>
-        <button className="btn-ghost" type="button" disabled={saving || choicePending} onClick={() => void submit(false)}>
-          Save draft
-        </button>
-        <button className="btn-ghost" type="button" onClick={onCancel}>
-          Cancel
-        </button>
+                </thead>
+                <tbody>
+                  {lines.length === 0 ? (
+                    <tr>
+                      <td className="px-4 py-10 text-center text-stone-500" colSpan={7}>
+                        Search for a product to add it.
+                      </td>
+                    </tr>
+                  ) : (
+                    lines.map((line, index) => {
+                      const amounts = summary.lines[index]
+                      return (
+                        <tr key={line.key} className="border-t border-line">
+                          <td className="px-4 py-3">
+                            <div className="font-medium">{line.name}</div>
+                            {line.sku ? <div className="text-xs text-stone-500">{line.sku}</div> : null}
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              className="field w-24"
+                              aria-label={`Quantity for ${line.name}`}
+                              inputMode="decimal"
+                              value={line.quantity}
+                              onChange={(event) =>
+                                setLines((current) => current.map((item) => (item.key === line.key ? { ...item, quantity: event.target.value } : item)))
+                              }
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <select
+                              className="field min-w-24"
+                              aria-label={`Unit for ${line.name}`}
+                              value={line.unitId}
+                              onChange={(event) =>
+                                setLines((current) => current.map((item) => (item.key === line.key ? { ...item, unitId: event.target.value } : item)))
+                              }
+                            >
+                              {units.some((unit) => unit.id === line.unitId) ? null : <option value={line.unitId}>{line.unitId}</option>}
+                              {units.map((unit) => (
+                                <option key={unit.id} value={unit.id}>
+                                  {unit.symbol}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              className="field w-28"
+                              aria-label={`Price for ${line.name}`}
+                              inputMode="decimal"
+                              value={line.unitPrice}
+                              onChange={(event) =>
+                                setLines((current) => current.map((item) => (item.key === line.key ? { ...item, unitPrice: event.target.value } : item)))
+                              }
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex gap-2">
+                              <select
+                                className="field w-20"
+                                aria-label={`Discount type for ${line.name}`}
+                                value={line.discountType}
+                                onChange={(event) =>
+                                  setLines((current) =>
+                                    current.map((item) =>
+                                      item.key === line.key ? { ...item, discountType: event.target.value as DiscountType } : item,
+                                    ),
+                                  )
+                                }
+                              >
+                                <option value="AMOUNT">Rs</option>
+                                <option value="PERCENT">%</option>
+                              </select>
+                              <input
+                                className="field w-20"
+                                aria-label={`Discount for ${line.name}`}
+                                inputMode="decimal"
+                                value={line.discountValue}
+                                onChange={(event) =>
+                                  setLines((current) =>
+                                    current.map((item) => (item.key === line.key ? { ...item, discountValue: event.target.value } : item)),
+                                  )
+                                }
+                              />
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 font-medium">{formatPkr(amounts?.total ?? 0)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              type="button"
+                              className="btn-danger h-9 w-9 px-0"
+                              aria-label={`Remove ${line.name}`}
+                              onClick={() => setLines((current) => current.filter((item) => item.key !== line.key))}
+                            >
+                              <Trash2 className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <Field label="Notes">
+              <textarea className="field" rows={3} value={notes} onChange={(event) => setNotes(event.target.value)} />
+            </Field>
+          </Card>
+          {excluded.length > 0 ? (
+            <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+              Excluded from this order: {excluded.join(", ")}. These items are not in the catalogue.
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" disabled={saving || choicePending}>
+              {saving ? "Saving…" : "Confirm order"}
+            </Button>
+            <Button variant="ghost" disabled={saving || choicePending} onClick={() => void submit(false)}>
+              Save draft
+            </Button>
+            <Button variant="ghost" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+        <Card className="order-first border-pine/20 p-5 xl:sticky xl:top-20 xl:order-none xl:col-start-2 xl:row-start-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-stone-500">Order summary</p>
+          <p className="mt-3 font-display text-4xl tracking-tight text-ink">{formatPkr(summary.grandTotal)}</p>
+          <p className="mt-1 text-sm text-stone-500">Grand total</p>
+          <dl className="mt-5 space-y-3 border-t border-line pt-4 text-sm">
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-stone-500">Items</dt>
+              <dd className="font-medium text-ink">{lines.length}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-stone-500">Quantity</dt>
+              <dd className="font-medium text-ink">{formatQty(summary.quantity)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-stone-500">Subtotal</dt>
+              <dd className="font-medium text-ink">{formatPkr(summary.subtotal)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-stone-500">Item discounts</dt>
+              <dd className="font-medium text-ink">{formatPkr(summary.itemDiscount)}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-stone-500">Order discount</dt>
+              <dd className="font-medium text-ink">{formatPkr(summary.orderDiscount)}</dd>
+            </div>
+          </dl>
+        </Card>
       </div>
     </form>
   )

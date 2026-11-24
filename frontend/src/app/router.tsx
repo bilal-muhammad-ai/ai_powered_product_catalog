@@ -16,6 +16,7 @@ import { OrderDetailsPage } from "../features/orders/pages/OrderDetailsPage"
 import { OrderFormPage } from "../features/orders/pages/OrderFormPage"
 import { OrderListPage } from "../features/orders/pages/OrderListPage"
 import { OrderReceiptPage } from "../features/orders/pages/OrderReceiptPage"
+import { DashboardPage } from "../features/dashboard/DashboardPage"
 import { ProductFormPage } from "../features/products/ProductFormPage"
 import { ProductListPage } from "../features/products/ProductListPage"
 import { UnitsPage } from "../features/units/UnitsPage"
@@ -24,7 +25,7 @@ export function AppRouter() {
   return (
     <AppShell>
       <Routes>
-        <Route path="/" element={<ProductListPage />} />
+        <Route path="/" element={<DashboardPage />} />
         <Route path="/products" element={<ProductListPage />} />
         <Route path="/products/new" element={<ProductFormPage />} />
         <Route path="/products/:productId" element={<ProductFormPage />} />
