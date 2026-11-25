@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { getInventorySummary, type InventorySummary } from "../../../api/inventory"
-import { ErrorNote, PageHeader } from "../../../components/ui"
+import { Card, EmptyState, ErrorNote, LoadingState, MeterList, PageHeader, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { InventoryStatusBadge, transactionTypeLabel } from "../components/InventoryStatusBadge"
 import { StockSummaryCards } from "../components/StockSummaryCards"
 import { formatPkr, formatQty } from "../logic"
@@ -45,69 +45,57 @@ export function InventoryDashboardPage() {
             ))}
           </div>
           <div className="grid gap-6 xl:grid-cols-2">
-            <section>
-              <h2 className="mb-3 font-display text-xl">Recent movements</h2>
-              <div className="overflow-x-auto rounded-lg border border-line bg-white">
+            <Card className="overflow-hidden">
+              <h2 className="border-b border-line px-4 py-3 font-display text-xl">Recent movements</h2>
+              {summary.recent_transactions.length === 0 ? <EmptyState title="No stock movements yet" /> : (
                 <table className="w-full text-left text-sm">
-                  <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+                  <thead className={tableHeadClass}>
                     <tr>
-                      <th className="px-4 py-3">Number</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Value</th>
+                      <th className={tableCellClass}>Number</th>
+                      <th className={tableCellClass}>Type</th>
+                      <th className={tableCellClass}>Value</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {summary.recent_transactions.length === 0 ? (
-                      <tr>
-                        <td className="px-4 py-6 text-stone-500" colSpan={3}>
-                          No stock movements yet.
+                    {summary.recent_transactions.map((item) => (
+                      <tr key={item.id} className="border-t border-line">
+                        <td className={tableCellClass}>
+                          <Link className="font-medium underline-offset-2 hover:underline" to={`/inventory/transactions/${item.id}`}>
+                            {item.transaction_number}
+                          </Link>
                         </td>
+                        <td className={tableCellClass}>{transactionTypeLabel(item.transaction_type)}</td>
+                        <td className={tableCellClass}>{formatPkr(item.total_value)}</td>
                       </tr>
-                    ) : (
-                      summary.recent_transactions.map((item) => (
-                        <tr key={item.id} className="border-t border-line">
-                          <td className="px-4 py-3">
-                            <Link className="font-medium underline-offset-2 hover:underline" to={`/inventory/transactions/${item.id}`}>
-                              {item.transaction_number}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3">{transactionTypeLabel(item.transaction_type)}</td>
-                          <td className="px-4 py-3">{formatPkr(item.total_value)}</td>
-                        </tr>
-                      ))
-                    )}
+                    ))}
                   </tbody>
                 </table>
-              </div>
-            </section>
-            <section>
-              <h2 className="mb-3 font-display text-xl">Value by category</h2>
-              <div className="rounded-lg border border-line bg-white">
-                {summary.value_by_category.length === 0 ? (
-                  <p className="px-4 py-6 text-sm text-stone-500">No inventory value yet.</p>
-                ) : (
-                  summary.value_by_category.map((row) => (
-                    <div key={row.category_name} className="flex items-center justify-between border-t border-line px-4 py-3 text-sm first:border-t-0">
-                      <span>{row.category_name}</span>
-                      <span className="font-medium">{formatPkr(row.inventory_value)}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-              <h2 className="mb-3 mt-6 font-display text-xl">Movement summary</h2>
-              <div className="rounded-lg border border-line bg-white">
-                {summary.movement_counts.length === 0 ? (
-                  <p className="px-4 py-6 text-sm text-stone-500">No posted movements yet.</p>
-                ) : (
-                  summary.movement_counts.map((row) => (
-                    <div key={row.transaction_type} className="flex items-center justify-between border-t border-line px-4 py-3 text-sm first:border-t-0">
-                      <span>{transactionTypeLabel(row.transaction_type)}</span>
-                      <span className="font-medium">{row.count}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </section>
+              )}
+            </Card>
+            <div className="grid gap-6">
+              <Card>
+                <h2 className="border-b border-line px-4 py-3 font-display text-xl">Value by category</h2>
+                <MeterList
+                  empty="No inventory value yet."
+                  rows={summary.value_by_category.map((row) => ({
+                    label: row.category_name,
+                    value: formatPkr(row.inventory_value),
+                    amount: Number(row.inventory_value) || 0,
+                  }))}
+                />
+              </Card>
+              <Card>
+                <h2 className="border-b border-line px-4 py-3 font-display text-xl">Movement summary</h2>
+                <MeterList
+                  empty="No posted movements yet."
+                  rows={summary.movement_counts.map((row) => ({
+                    label: transactionTypeLabel(row.transaction_type),
+                    value: String(row.count),
+                    amount: row.count,
+                  }))}
+                />
+              </Card>
+            </div>
           </div>
           <div className="mt-6 grid gap-6 xl:grid-cols-2">
             <WatchList title="Low stock" rows={summary.low_stock} empty="Nothing is below its minimum." />
@@ -115,7 +103,7 @@ export function InventoryDashboardPage() {
           </div>
         </>
       ) : error ? null : (
-        <p className="text-sm text-stone-500">Loading inventory…</p>
+        <LoadingState label="Loading inventory…" />
       )}
     </div>
   )
@@ -133,7 +121,7 @@ function WatchList({
   return (
     <section>
       <h2 className="mb-3 font-display text-xl">{title}</h2>
-      <div className="overflow-hidden rounded-lg border border-line bg-white">
+      <Card className="overflow-hidden">
         {rows.length === 0 ? (
           <p className="px-4 py-6 text-sm text-stone-500">{empty}</p>
         ) : (
@@ -156,7 +144,7 @@ function WatchList({
             </Link>
           ))
         )}
-      </div>
+      </Card>
     </section>
   )
 }

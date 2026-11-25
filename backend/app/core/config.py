@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     hf_token: str = ""
     hf_embedding_model: str = "intfloat/multilingual-e5-small"
+    groq_api_key: str = ""
+    groq_order_model: str = "openai/gpt-oss-120b"
     sparse_embedding_model: str = "Qdrant/bm25"
     qdrant_url: str = "http://localhost:6333"
     qdrant_collection: str = "catalogue_products"

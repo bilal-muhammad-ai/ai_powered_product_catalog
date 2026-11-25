@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { getReport, reportCsvPath, type ReportTable } from "../../../api/inventory"
-import { ErrorNote, Field, PageHeader } from "../../../components/ui"
+import { Card, DataTable, ErrorNote, Field, PageHeader, SearchInput, tableCellClass, tableHeadClass } from "../../../components/ui"
 
 const reports = [
   { id: "summary", label: "Stock summary" },
@@ -52,12 +52,12 @@ export function InventoryReportsPage() {
       />
       <ErrorNote message={error} />
       <form
-        className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-4"
         onSubmit={(event) => {
           event.preventDefault()
           load().catch((reason: Error) => setError(reason.message))
         }}
       >
+        <Card className="mb-6 grid gap-3 p-4 md:grid-cols-4">
         <Field label="Report">
           <select className="field" value={report} onChange={(event) => setReport(event.target.value)}>
             {reports.map((item) => (
@@ -67,9 +67,7 @@ export function InventoryReportsPage() {
             ))}
           </select>
         </Field>
-        <Field label="Search">
-          <input className="field" value={q} onChange={(event) => setQ(event.target.value)} />
-        </Field>
+        <SearchInput label="Search" value={q} onChange={setQ} />
         <Field label="From">
           <input className="field" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} disabled={report !== "movements"} />
         </Field>
@@ -81,13 +79,13 @@ export function InventoryReportsPage() {
             Apply
           </button>
         </div>
+        </Card>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[720px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+      <DataTable className="min-w-[720px]">
+          <thead className={tableHeadClass}>
             <tr>
               {table?.header.map((heading) => (
-                <th key={heading} className="px-4 py-3">
+                <th key={heading} className={tableCellClass}>
                   {heading}
                 </th>
               ))}
@@ -114,8 +112,7 @@ export function InventoryReportsPage() {
               ))
             )}
           </tbody>
-        </table>
-      </div>
+      </DataTable>
     </div>
   )
 }

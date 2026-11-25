@@ -5,17 +5,20 @@ export default {
     extend: {
       colors: {
         ink: "#1f1a17",
-        paper: "#f3efe6",
+        paper: "#f6f3ec",
         copper: {
           DEFAULT: "#9c4221",
           bright: "#b4532a",
         },
         pine: "#314232",
-        line: "#ddd4c6",
+        line: "#e4dcd0",
       },
       fontFamily: {
         sans: ["Outfit", "sans-serif"],
         display: ["Fraunces", "serif"],
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(31, 26, 23, 0.05)",
       },
     },
   },

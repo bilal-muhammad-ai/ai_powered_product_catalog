@@ -1,7 +1,8 @@
+import { Search } from "lucide-react"
 import { useEffect, useState } from "react"
-import { searchOrderCatalog, type OrderCatalogHit } from "../api"
 import { Field } from "../../../components/ui"
-import { formatQty } from "../logic"
+import { searchOrderCatalog, type OrderCatalogHit } from "../api"
+import { formatPkr, formatQty } from "../logic"
 
 export function OrderProductSearch({ onSelect }: { onSelect: (hit: OrderCatalogHit) => void }) {
   const [q, setQ] = useState("")
@@ -30,17 +31,20 @@ export function OrderProductSearch({ onSelect }: { onSelect: (hit: OrderCatalogH
   return (
     <div>
       <Field label="Search product, SKU, or category">
-        <input className="field" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Cement, rod, SKU" />
+        <span className="relative block">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
+          <input className="field pl-9" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Cement, rod, SKU" />
+        </span>
       </Field>
       {error ? <p className="mt-2 text-sm text-red-700">{error}</p> : null}
-      {searched && hits.length === 0 ? <p className="mt-2 text-sm text-stone-500">No products found.</p> : null}
+      {searched && hits.length === 0 ? <p className="mt-3 text-sm text-stone-500">No products found.</p> : null}
       {hits.length > 0 ? (
-        <ul className="mt-2 overflow-hidden rounded-md border border-line bg-white">
+        <ul className="mt-3 overflow-hidden rounded-lg border border-line">
           {hits.map((hit) => (
             <li key={hit.product_id} className="border-t border-line first:border-t-0">
               <button
                 type="button"
-                className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm hover:bg-paper"
+                className="flex w-full items-center justify-between gap-3 px-3 py-2.5 text-left text-sm hover:bg-paper focus-visible:bg-paper focus-visible:outline-none"
                 onClick={() => {
                   onSelect(hit)
                   setQ("")
@@ -48,13 +52,17 @@ export function OrderProductSearch({ onSelect }: { onSelect: (hit: OrderCatalogH
                   setSearched(false)
                 }}
               >
-                <span>
-                  <span className="font-medium">{hit.name}</span>
-                  <span className="ml-2 text-stone-500">{hit.sku}</span>
-                  <span className="ml-2 text-stone-400">{hit.category_name}</span>
+                <span className="min-w-0">
+                  <span className="block font-medium text-ink">{hit.name}</span>
+                  <span className="block text-xs text-stone-500">
+                    {hit.sku} · {hit.category_name}
+                  </span>
                 </span>
-                <span className="text-stone-600">
-                  {formatQty(hit.quantity_on_hand)} {hit.unit_symbol} · {hit.selling_price}
+                <span className="shrink-0 text-right text-stone-600">
+                  <span className="block font-medium text-ink">{formatPkr(hit.selling_price)}</span>
+                  <span className="block text-xs">
+                    {formatQty(hit.quantity_on_hand)} {hit.unit_symbol}
+                  </span>
                 </span>
               </button>
             </li>
