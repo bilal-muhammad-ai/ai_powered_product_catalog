@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { listTransactions, postTransaction, reverseTransaction, type TransactionListItem } from "../../../api/inventory"
-import { ErrorNote, Field, PageHeader } from "../../../components/ui"
+import { Card, ConfirmationDialog, DataTable, ErrorNote, Field, PageHeader, Pagination, SearchInput, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { TransactionStatusBadge, transactionTypeLabel } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
 
@@ -56,37 +56,28 @@ export function InventoryTransactionListPage() {
     }
   }
 
-  const pages = Math.max(1, Math.ceil(total / 20))
-
   return (
     <div>
       <PageHeader title="Transactions" lede="Drafts can be posted. Posted documents are corrected by a reversal." />
       <ErrorNote message={error} />
       {pending ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
-          <p className="text-sm">
-            {pending.action === "post" ? "Post" : "Reverse"} {pending.number}? This updates stock.
-          </p>
-          <div className="flex gap-2">
-            <button className="btn" type="button" onClick={() => void confirm()}>
-              Confirm
-            </button>
-            <button className="btn-ghost" type="button" onClick={() => setPending(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+        <ConfirmationDialog
+          title={pending.action === "post" ? "Post transaction" : "Reverse transaction"}
+          message={`${pending.action === "post" ? "Post" : "Reverse"} ${pending.number}? This updates stock.`}
+          confirmLabel="Confirm"
+          tone={pending.action === "reverse" ? "danger" : "primary"}
+          onClose={() => setPending(null)}
+          onConfirm={() => void confirm()}
+        />
       ) : null}
       <form
-        className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-3 xl:grid-cols-6"
         onSubmit={(event) => {
           event.preventDefault()
           reload(1).catch((reason: Error) => setError(reason.message))
         }}
       >
-        <Field label="Search">
-          <input className="field" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Number, product, SKU" />
-        </Field>
+        <Card className="mb-6 grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-6">
+        <SearchInput label="Search" value={q} onChange={setQ} placeholder="Number, product, SKU" />
         <Field label="Type">
           <select className="field" value={type} onChange={(event) => setType(event.target.value)}>
             <option value="">Any</option>
@@ -116,20 +107,20 @@ export function InventoryTransactionListPage() {
             Apply filters
           </button>
         </div>
+        </Card>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[980px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+      <DataTable className="min-w-[980px]">
+          <thead className={tableHeadClass}>
             <tr>
-              <th className="px-4 py-3">Number</th>
-              <th className="px-4 py-3">Type</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Items</th>
-              <th className="px-4 py-3">Quantity</th>
-              <th className="px-4 py-3">Value</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Reference</th>
-              <th className="px-4 py-3" />
+              <th className={tableCellClass}>Number</th>
+              <th className={tableCellClass}>Type</th>
+              <th className={tableCellClass}>Date</th>
+              <th className={tableCellClass}>Items</th>
+              <th className={tableCellClass}>Quantity</th>
+              <th className={tableCellClass}>Value</th>
+              <th className={tableCellClass}>Status</th>
+              <th className={tableCellClass}>Reference</th>
+              <th className={tableCellClass} />
             </tr>
           </thead>
           <tbody>
@@ -183,21 +174,14 @@ export function InventoryTransactionListPage() {
               ))
             )}
           </tbody>
-        </table>
-      </div>
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <p className="text-stone-600">
-          {total} transactions · page {page} of {pages}
-        </p>
-        <div className="flex gap-2">
-          <button className="btn-ghost" type="button" disabled={page <= 1} onClick={() => reload(page - 1).catch((reason: Error) => setError(reason.message))}>
-            Previous
-          </button>
-          <button className="btn-ghost" type="button" disabled={page >= pages} onClick={() => reload(page + 1).catch((reason: Error) => setError(reason.message))}>
-            Next
-          </button>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination
+        page={page}
+        pageSize={20}
+        total={total}
+        noun="transactions"
+        onPage={(next) => reload(next).catch((reason: Error) => setError(reason.message))}
+      />
     </div>
   )
 }

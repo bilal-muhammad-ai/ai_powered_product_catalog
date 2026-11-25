@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { getProduct, listAttributes, listCategories, listUnits, saveProduct } from "../../api/resources"
 import type { Attribute, CategoryNode, Unit } from "../../api/types"
 import { DynamicAttributeFields } from "../../components/forms/DynamicAttributeFields"
-import { ErrorNote, Field, PageHeader } from "../../components/ui"
+import { Card, ErrorNote, Field, PageHeader } from "../../components/ui"
 import { flattenCategories } from "../../lib/tree"
 
 function pick(values: Record<string, unknown>, allowed: Set<string>) {
@@ -160,7 +160,10 @@ export function ProductFormPage() {
         }
       />
       <ErrorNote message={error} />
-      <section className="mb-6 grid gap-4 rounded-lg border border-line bg-white p-4 md:grid-cols-2">
+      <Card className="mb-6 grid gap-4 p-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <h2 className="font-display text-xl text-ink">Identity</h2>
+        </div>
         <Field label="Category">
           <select className="field" value={categoryId} onChange={(event) => void onCategoryChange(event.target.value)}>
             <option value="">Select a category</option>
@@ -191,6 +194,9 @@ export function ProductFormPage() {
             <option value="archived">Archived</option>
           </select>
         </Field>
+        <div className="md:col-span-2 border-t border-line pt-4">
+          <h2 className="font-display text-xl text-ink">Units and pricing</h2>
+        </div>
         <Field label="Base unit">
           <select className="field" value={baseUnitId} onChange={(event) => setBaseUnitId(event.target.value)}>
             <option value="">None</option>
@@ -238,8 +244,8 @@ export function ProductFormPage() {
             <textarea className="field min-h-24" value={description} onChange={(event) => setDescription(event.target.value)} />
           </Field>
         </div>
-      </section>
-      <section className="mb-6 rounded-lg border border-line bg-white p-4">
+      </Card>
+      <Card className="mb-6 p-4">
         <h2 className="mb-3 font-display text-xl">Specifications</h2>
         {categoryId ? (
           <DynamicAttributeFields
@@ -250,7 +256,7 @@ export function ProductFormPage() {
         ) : (
           <p className="text-sm text-stone-500">Select a category to show its fields.</p>
         )}
-      </section>
+      </Card>
       <button className="btn" type="submit" disabled={saving}>
         {saving ? "Saving…" : "Save product"}
       </button>

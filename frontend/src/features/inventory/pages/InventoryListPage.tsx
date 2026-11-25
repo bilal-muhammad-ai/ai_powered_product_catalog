@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { listInventory, type BalanceItem } from "../../../api/inventory"
 import { listCategories } from "../../../api/resources"
 import type { CategoryNode } from "../../../api/types"
-import { ErrorNote, Field, PageHeader } from "../../../components/ui"
+import { Card, DataTable, ErrorNote, Field, PageHeader, Pagination, SearchInput, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { flattenCategories } from "../../../lib/tree"
 import { InventoryStatusBadge } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
@@ -47,8 +47,6 @@ export function InventoryListPage() {
     })
   }, [])
 
-  const pages = Math.max(1, Math.ceil(total / 20))
-
   return (
     <div>
       <PageHeader
@@ -62,15 +60,13 @@ export function InventoryListPage() {
       />
       <ErrorNote message={error} />
       <form
-        className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-3 xl:grid-cols-7"
         onSubmit={(event) => {
           event.preventDefault()
           reload(1).catch((reason: Error) => setError(reason.message))
         }}
       >
-        <Field label="Search">
-          <input className="field" value={q} onChange={(event) => setQ(event.target.value)} placeholder="Name or SKU" />
-        </Field>
+        <Card className="mb-6 grid gap-3 p-4 md:grid-cols-3 xl:grid-cols-4">
+        <SearchInput label="Search" value={q} onChange={setQ} placeholder="Name or SKU" />
         <Field label="Category">
           <select className="field" value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
             <option value="">All</option>
@@ -113,19 +109,19 @@ export function InventoryListPage() {
             Apply filters
           </button>
         </div>
+        </Card>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[960px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+      <DataTable className="min-w-[960px]">
+          <thead className={tableHeadClass}>
             <tr>
-              <th className="px-4 py-3">Product</th>
-              <th className="px-4 py-3">SKU</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Brand</th>
-              <th className="px-4 py-3">Quantity</th>
-              <th className="px-4 py-3">Average cost</th>
-              <th className="px-4 py-3">Value</th>
-              <th className="px-4 py-3">Status</th>
+              <th className={tableCellClass}>Product</th>
+              <th className={tableCellClass}>SKU</th>
+              <th className={tableCellClass}>Category</th>
+              <th className={tableCellClass}>Brand</th>
+              <th className={tableCellClass}>Quantity</th>
+              <th className={tableCellClass}>Average cost</th>
+              <th className={tableCellClass}>Value</th>
+              <th className={tableCellClass}>Status</th>
             </tr>
           </thead>
           <tbody>
@@ -164,21 +160,14 @@ export function InventoryListPage() {
               ))
             )}
           </tbody>
-        </table>
-      </div>
-      <div className="mt-4 flex items-center justify-between text-sm">
-        <p className="text-stone-600">
-          {total} products · page {page} of {pages}
-        </p>
-        <div className="flex gap-2">
-          <button className="btn-ghost" type="button" disabled={page <= 1} onClick={() => reload(page - 1).catch((reason: Error) => setError(reason.message))}>
-            Previous
-          </button>
-          <button className="btn-ghost" type="button" disabled={page >= pages} onClick={() => reload(page + 1).catch((reason: Error) => setError(reason.message))}>
-            Next
-          </button>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination
+        page={page}
+        pageSize={20}
+        total={total}
+        noun="products"
+        onPage={(next) => reload(next).catch((reason: Error) => setError(reason.message))}
+      />
     </div>
   )
 }

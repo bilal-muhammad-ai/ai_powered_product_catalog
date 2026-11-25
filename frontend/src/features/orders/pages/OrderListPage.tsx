@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
-import { ErrorNote, Field, PageHeader } from "../../../components/ui"
+import { Card, ConfirmationDialog, DataTable, ErrorNote, Field, PageHeader, Pagination, SearchInput, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { cancelOrder, confirmOrder, listOrders, type OrderListItem } from "../api"
 import { OrderStatusBadge } from "../components/OrderStatusBadge"
 import { formatPkr } from "../logic"
@@ -56,8 +56,6 @@ export function OrderListPage() {
     }
   }
 
-  const pages = Math.max(1, Math.ceil(total / 20))
-
   return (
     <div>
       <PageHeader
@@ -71,30 +69,23 @@ export function OrderListPage() {
       />
       <ErrorNote message={error} />
       {pending ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
-          <p className="text-sm">
-            {pending.action === "confirm" ? "Confirm" : "Cancel"} {pending.number}? This updates stock.
-          </p>
-          <div className="flex gap-2">
-            <button className="btn" type="button" onClick={() => void runPending()}>
-              Confirm
-            </button>
-            <button className="btn-ghost" type="button" onClick={() => setPending(null)}>
-              Back
-            </button>
-          </div>
-        </div>
+        <ConfirmationDialog
+          title={pending.action === "confirm" ? "Confirm order" : "Cancel order"}
+          message={`${pending.action === "confirm" ? "Confirm" : "Cancel"} ${pending.number}? This updates stock.`}
+          confirmLabel="Confirm"
+          tone={pending.action === "cancel" ? "danger" : "primary"}
+          onClose={() => setPending(null)}
+          onConfirm={() => void runPending()}
+        />
       ) : null}
       <form
-        className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-5"
         onSubmit={(event) => {
           event.preventDefault()
           reload(1).catch((reason: Error) => setError(reason.message))
         }}
       >
-        <Field label="Order number">
-          <input className="field" value={q} onChange={(event) => setQ(event.target.value)} placeholder="ORD-2026" />
-        </Field>
+        <Card className="mb-6 grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-5">
+        <SearchInput label="Order number" value={q} onChange={setQ} placeholder="ORD-2026" />
         <Field label="Status">
           <select className="field" value={status} onChange={(event) => setStatus(event.target.value)}>
             <option value="">Any</option>
@@ -115,17 +106,17 @@ export function OrderListPage() {
             Apply filters
           </button>
         </div>
+        </Card>
       </form>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
-        <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+      <DataTable className="min-w-[760px]">
+          <thead className={tableHeadClass}>
             <tr>
-              <th className="px-4 py-3">Number</th>
-              <th className="px-4 py-3">Date</th>
-              <th className="px-4 py-3">Items</th>
-              <th className="px-4 py-3">Total</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3" />
+              <th className={tableCellClass}>Number</th>
+              <th className={tableCellClass}>Date</th>
+              <th className={tableCellClass}>Items</th>
+              <th className={tableCellClass}>Total</th>
+              <th className={tableCellClass}>Status</th>
+              <th className={tableCellClass} />
             </tr>
           </thead>
           <tbody>
@@ -184,21 +175,14 @@ export function OrderListPage() {
               ))
             )}
           </tbody>
-        </table>
-      </div>
-      <div className="mt-4 flex items-center justify-between text-sm text-stone-600">
-        <span>
-          {total} orders · page {page} of {pages}
-        </span>
-        <div className="flex gap-2">
-          <button className="btn-ghost" type="button" disabled={page <= 1} onClick={() => reload(page - 1).catch((reason: Error) => setError(reason.message))}>
-            Previous
-          </button>
-          <button className="btn-ghost" type="button" disabled={page >= pages} onClick={() => reload(page + 1).catch((reason: Error) => setError(reason.message))}>
-            Next
-          </button>
-        </div>
-      </div>
+      </DataTable>
+      <Pagination
+        page={page}
+        pageSize={20}
+        total={total}
+        noun="orders"
+        onPage={(next) => reload(next).catch((reason: Error) => setError(reason.message))}
+      />
     </div>
   )
 }

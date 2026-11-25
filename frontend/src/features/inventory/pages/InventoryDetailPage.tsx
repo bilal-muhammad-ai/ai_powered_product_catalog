@@ -1,7 +1,7 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { getInventory, getInventoryHistory, saveStockSettings, type InventoryDetail, type Movement } from "../../../api/inventory"
-import { ErrorNote, Field, PageHeader } from "../../../components/ui"
+import { Card, DataTable, ErrorNote, Field, LoadingState, PageHeader, StatCard, StatGrid, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { InventoryStatusBadge, transactionTypeLabel } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
 
@@ -47,7 +47,7 @@ export function InventoryDetailPage() {
     }
   }
 
-  if (!detail && !error) return <p className="text-sm text-stone-500">Loading stock…</p>
+  if (!detail && !error) return <LoadingState label="Loading stock…" />
 
   return (
     <div>
@@ -72,24 +72,25 @@ export function InventoryDetailPage() {
       {saved ? <p className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{saved}</p> : null}
       {detail ? (
         <>
-          <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Fact label="On hand" value={`${formatQty(detail.quantity_on_hand)} ${detail.unit_symbol}`} />
-            <Fact label="Average cost" value={formatPkr(detail.average_cost)} />
-            <Fact label="Inventory value" value={formatPkr(detail.inventory_value)} />
-            <Fact label="Status" value={<InventoryStatusBadge status={detail.stock_status} />} />
-          </div>
+          <StatGrid>
+            <StatCard label="On hand" value={`${formatQty(detail.quantity_on_hand)} ${detail.unit_symbol}`} />
+            <StatCard label="Average cost" value={formatPkr(detail.average_cost)} />
+            <StatCard label="Inventory value" value={formatPkr(detail.inventory_value)} />
+            <StatCard label="Status" value={<InventoryStatusBadge status={detail.stock_status} />} />
+          </StatGrid>
           <p className="mb-6 text-sm text-stone-600">
             Catalogue cost {formatPkr(detail.cost_price)}
             {detail.brand ? ` · ${detail.brand}` : ""}
             {detail.net_quantity ? ` · ${formatQty(detail.net_quantity)} ${detail.net_quantity_unit_symbol ?? ""} per ${detail.unit_symbol}` : ""}
           </p>
           <form
-            className="mb-8 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-4"
+            className="mb-8"
             onSubmit={(event) => {
               event.preventDefault()
               void saveThresholds()
             }}
           >
+            <Card className="grid gap-3 p-4 md:grid-cols-4">
             <Field label="Minimum">
               <input className="field" inputMode="decimal" value={minimum} onChange={(event) => setMinimum(event.target.value)} />
             </Field>
@@ -104,6 +105,7 @@ export function InventoryDetailPage() {
                 Save levels
               </button>
             </div>
+            </Card>
           </form>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-xl">Stock movement history</h2>
@@ -116,15 +118,14 @@ export function InventoryDetailPage() {
               <option value="REVERSAL">Reversals</option>
             </select>
           </div>
-          <div className="overflow-x-auto rounded-lg border border-line bg-white">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+          <DataTable className="min-w-[760px]">
+              <thead className={tableHeadClass}>
                 <tr>
-                  <th className="px-4 py-3">Number</th>
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Type</th>
-                  <th className="px-4 py-3">Movement</th>
-                  <th className="px-4 py-3">Cost</th>
+                  <th className={tableCellClass}>Number</th>
+                  <th className={tableCellClass}>Date</th>
+                  <th className={tableCellClass}>Type</th>
+                  <th className={tableCellClass}>Movement</th>
+                  <th className={tableCellClass}>Cost</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,19 +154,9 @@ export function InventoryDetailPage() {
                   ))
                 )}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
         </>
       ) : null}
-    </div>
-  )
-}
-
-function Fact({ label, value }: { label: string; value: ReactNode }) {
-  return (
-    <div className="rounded-lg border border-line bg-white px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{label}</p>
-      <div className="mt-1 text-lg font-medium text-ink">{value}</div>
     </div>
   )
 }

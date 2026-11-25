@@ -137,7 +137,7 @@ export function StockDocumentForm({
       }}
     >
       {error ? <p className="mb-4 whitespace-pre-line rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p> : null}
-      <div className="mb-4 grid gap-3 rounded-lg border border-line bg-white p-4 md:grid-cols-3">
+      <div className="mb-4 grid gap-3 rounded-xl border border-line bg-white p-4 shadow-card md:grid-cols-3">
         <Field label="Date">
           <input className="field" type="date" value={date} onChange={(event) => setDate(event.target.value)} />
         </Field>
@@ -154,12 +154,12 @@ export function StockDocumentForm({
           </Field>
         ) : null}
       </div>
-      <div className="mb-4 rounded-lg border border-line bg-white p-4">
+      <div className="mb-4 rounded-xl border border-line bg-white p-4 shadow-card">
         <ProductSearch onSelect={addHit} />
       </div>
-      <div className="overflow-x-auto rounded-lg border border-line bg-white">
+      <div className="overflow-x-auto rounded-xl border border-line bg-white shadow-card">
         <table className="w-full min-w-[760px] text-left text-sm">
-          <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+          <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
             <tr>
               <th className="px-4 py-3">Product</th>
               {mode === "issue" ? <th className="px-4 py-3">Available</th> : null}

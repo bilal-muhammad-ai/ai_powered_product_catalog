@@ -38,7 +38,7 @@ export function OrderReceiptPage() {
         </button>
       </div>
       <header className="border-b border-stone-300 pb-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Yard office</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Rehan Cement</p>
         <h1 className="mt-1 font-display text-3xl">Order {order.order_number}</h1>
         <p className="mt-1 text-sm text-stone-600">{order.order_date}</p>
       </header>

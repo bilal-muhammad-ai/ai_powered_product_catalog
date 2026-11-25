@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { getTransaction, postTransaction, reverseTransaction, type Transaction } from "../../../api/inventory"
 import { ApiError } from "../../../api/client"
-import { ErrorNote, PageHeader } from "../../../components/ui"
+import { ConfirmationDialog, DataTable, ErrorNote, LoadingState, PageHeader, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { TransactionStatusBadge, transactionTypeLabel } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
 
@@ -55,7 +55,7 @@ export function InventoryTransactionDetailsPage() {
     }
   }
 
-  if (!transaction && !error) return <p className="text-sm text-stone-500">Loading transaction…</p>
+  if (!transaction && !error) return <LoadingState label="Loading transaction…" />
 
   return (
     <div>
@@ -84,17 +84,14 @@ export function InventoryTransactionDetailsPage() {
       />
       <ErrorNote message={error} />
       {confirm ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
-          <p className="text-sm">{confirm === "post" ? "Post this draft and update stock?" : "Reverse this posted transaction?"}</p>
-          <div className="flex gap-2">
-            <button className="btn" type="button" onClick={() => void run()}>
-              Confirm
-            </button>
-            <button className="btn-ghost" type="button" onClick={() => setConfirm(null)}>
-              Cancel
-            </button>
-          </div>
-        </div>
+        <ConfirmationDialog
+          title={confirm === "post" ? "Post transaction" : "Reverse transaction"}
+          message={confirm === "post" ? "Post this draft and update stock?" : "Reverse this posted transaction?"}
+          confirmLabel="Confirm"
+          tone={confirm === "reverse" ? "danger" : "primary"}
+          onClose={() => setConfirm(null)}
+          onConfirm={() => void run()}
+        />
       ) : null}
       {transaction ? (
         <>
@@ -109,17 +106,16 @@ export function InventoryTransactionDetailsPage() {
             {transaction.reference_number ? <span>Reference {transaction.reference_number}</span> : null}
           </div>
           {transaction.notes ? <p className="mb-6 text-sm text-stone-600">{transaction.notes}</p> : null}
-          <div className="overflow-x-auto rounded-lg border border-line bg-white">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+          <DataTable className="min-w-[760px]">
+              <thead className={tableHeadClass}>
                 <tr>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">SKU</th>
-                  <th className="px-4 py-3">Quantity</th>
-                  <th className="px-4 py-3">Unit</th>
-                  <th className="px-4 py-3">Unit cost</th>
-                  <th className="px-4 py-3">Total</th>
-                  <th className="px-4 py-3">Movement</th>
+                  <th className={tableCellClass}>Product</th>
+                  <th className={tableCellClass}>SKU</th>
+                  <th className={tableCellClass}>Quantity</th>
+                  <th className={tableCellClass}>Unit</th>
+                  <th className={tableCellClass}>Unit cost</th>
+                  <th className={tableCellClass}>Total</th>
+                  <th className={tableCellClass}>Movement</th>
                 </tr>
               </thead>
               <tbody>
@@ -142,8 +138,7 @@ export function InventoryTransactionDetailsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+          </DataTable>
         </>
       ) : null}
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router-dom"
-import { ErrorNote, PageHeader } from "../../../components/ui"
+import { Card, ConfirmationDialog, DataTable, ErrorNote, LoadingState, PageHeader, StatCard, StatGrid, tableCellClass, tableHeadClass } from "../../../components/ui"
 import { cancelOrder, completeOrder, confirmOrder, deleteOrder, readOrder, type Order } from "../api"
 import { OrderStatusBadge } from "../components/OrderStatusBadge"
 import { formatPkr, formatQty } from "../logic"
@@ -58,7 +58,7 @@ export function OrderDetailsPage() {
     }
   }
 
-  if (!order && !error) return <p className="text-sm text-stone-500">Loading order…</p>
+  if (!order && !error) return <LoadingState label="Loading order…" />
 
   return (
     <div>
@@ -102,51 +102,47 @@ export function OrderDetailsPage() {
       />
       <ErrorNote message={error} />
       {pending ? (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-line bg-white p-4">
-          <p className="text-sm">
-            {pending === "confirm" ? "Confirm this order and issue the stock?" : null}
-            {pending === "cancel" ? "Cancel this order and return the stock?" : null}
-            {pending === "delete" ? "Delete this draft?" : null}
-          </p>
-          <div className="flex gap-2">
-            <button className="btn" type="button" onClick={() => void run()}>
-              Confirm
-            </button>
-            <button className="btn-ghost" type="button" onClick={() => setPending(null)}>
-              Back
-            </button>
-          </div>
-        </div>
+        <ConfirmationDialog
+          title={pending === "delete" ? "Delete draft" : pending === "cancel" ? "Cancel order" : "Confirm order"}
+          message={
+            pending === "confirm"
+              ? "Confirm this order and issue the stock?"
+              : pending === "cancel"
+                ? "Cancel this order and return the stock?"
+                : "Delete this draft?"
+          }
+          confirmLabel={pending === "delete" ? "Delete" : "Confirm"}
+          tone={pending === "confirm" ? "primary" : "danger"}
+          onClose={() => setPending(null)}
+          onConfirm={() => void run()}
+        />
       ) : null}
       {order ? (
         <>
-          <div className="mb-6 grid gap-3 rounded-lg border border-line bg-white p-4 text-sm md:grid-cols-4">
-            <p>
-              Status <OrderStatusBadge status={order.status} />
+          <StatGrid>
+            <StatCard label="Status" value={<OrderStatusBadge status={order.status} />} />
+            <StatCard label="Items" value={order.item_count} />
+            <StatCard label="Quantity" value={formatQty(order.total_quantity)} />
+            <StatCard label="Grand total" value={formatPkr(order.grand_total)} />
+          </StatGrid>
+          {order.inventory_transaction_id ? (
+            <p className="mb-4 text-sm text-stone-600">
+              Stock issue{" "}
+              <Link className="font-medium text-copper underline-offset-2 hover:underline" to={`/inventory/transactions/${order.inventory_transaction_id}`}>
+                {order.inventory_transaction_number}
+              </Link>
             </p>
-            <p>Items {order.item_count}</p>
-            <p>Quantity {formatQty(order.total_quantity)}</p>
-            <p className="font-semibold">Grand total {formatPkr(order.grand_total)}</p>
-            {order.inventory_transaction_id ? (
-              <p>
-                Stock issue{" "}
-                <Link className="underline-offset-2 hover:underline" to={`/inventory/transactions/${order.inventory_transaction_id}`}>
-                  {order.inventory_transaction_number}
-                </Link>
-              </p>
-            ) : null}
-          </div>
+          ) : null}
           {order.notes ? <p className="mb-4 text-sm text-stone-600">{order.notes}</p> : null}
-          <div className="overflow-x-auto rounded-lg border border-line bg-white">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-stone-100 text-xs uppercase tracking-wide text-stone-500">
+          <DataTable className="min-w-[760px]">
+              <thead className={tableHeadClass}>
                 <tr>
-                  <th className="px-4 py-3">Product</th>
-                  <th className="px-4 py-3">Quantity</th>
-                  <th className="px-4 py-3">Unit</th>
-                  <th className="px-4 py-3">Price</th>
-                  <th className="px-4 py-3">Discount</th>
-                  <th className="px-4 py-3">Total</th>
+                  <th className={tableCellClass}>Product</th>
+                  <th className={tableCellClass}>Quantity</th>
+                  <th className={tableCellClass}>Unit</th>
+                  <th className={tableCellClass}>Price</th>
+                  <th className={tableCellClass}>Discount</th>
+                  <th className={tableCellClass}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -164,14 +160,13 @@ export function OrderDetailsPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
-          <div className="mt-4 grid gap-1 text-sm">
-            <p>Subtotal {formatPkr(order.subtotal)}</p>
-            <p>Item discounts {formatPkr(order.item_discount_total)}</p>
-            <p>Order discount {formatPkr(order.order_discount_amount)}</p>
-            <p className="font-semibold">Grand total {formatPkr(order.grand_total)}</p>
-          </div>
+          </DataTable>
+          <Card className="mt-4 grid gap-2 p-4 text-sm sm:grid-cols-2">
+            <p className="flex justify-between gap-4"><span className="text-stone-500">Subtotal</span><span>{formatPkr(order.subtotal)}</span></p>
+            <p className="flex justify-between gap-4"><span className="text-stone-500">Item discounts</span><span>{formatPkr(order.item_discount_total)}</span></p>
+            <p className="flex justify-between gap-4"><span className="text-stone-500">Order discount</span><span>{formatPkr(order.order_discount_amount)}</span></p>
+            <p className="flex justify-between gap-4 font-semibold text-ink"><span>Grand total</span><span>{formatPkr(order.grand_total)}</span></p>
+          </Card>
         </>
       ) : null}
     </div>
