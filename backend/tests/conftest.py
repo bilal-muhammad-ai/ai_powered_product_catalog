@@ -53,6 +53,12 @@ def db(engine) -> Generator[Session, None, None]:
         connection.close()
 
 
+@pytest.fixture(autouse=True)
+def skip_product_embedding_sync(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Product API tests must not load embedding models or talk to Qdrant."""
+    monkeypatch.setattr("app.api.v1.products.sync_product_embedding", lambda product_id: None)
+
+
 @pytest.fixture
 def client(db: Session) -> Generator[TestClient, None, None]:
     def override() -> Generator[Session, None, None]:

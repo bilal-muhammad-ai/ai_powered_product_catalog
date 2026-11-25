@@ -90,6 +90,30 @@ class QdrantProductStore:
             ],
         )
 
+    def find_by_product_id(self, product_id: str) -> list[tuple[str, dict[str, str]]]:
+        """Return point ids and payloads whose metadata product_id matches."""
+        from qdrant_client.models import FieldCondition, Filter, MatchValue
+
+        found: list[tuple[str, dict[str, str]]] = []
+        offset = None
+        query_filter = Filter(
+            must=[FieldCondition(key="product_id", match=MatchValue(value=product_id))]
+        )
+        while True:
+            points, offset = self._client.scroll(
+                collection_name=self._collection,
+                scroll_filter=query_filter,
+                limit=_SCROLL_PAGE,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            for point in points:
+                found.append((str(point.id), _payload_strings(point.payload)))
+            if offset is None:
+                break
+        return found
+
     def existing_ids(self) -> set[str]:
         ids: set[str] = set()
         offset = None
@@ -138,3 +162,14 @@ def _named_config(configs: object, name: str) -> object | None:
     if isinstance(configs, dict):
         return configs.get(name)
     return None
+
+
+def _payload_strings(payload: object) -> dict[str, str]:
+    if not isinstance(payload, dict):
+        return {}
+    cleaned: dict[str, str] = {}
+    for key, value in payload.items():
+        if value is None:
+            continue
+        cleaned[str(key)] = value if isinstance(value, str) else str(value)
+    return cleaned
