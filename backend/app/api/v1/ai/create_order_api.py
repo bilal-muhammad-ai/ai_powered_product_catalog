@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
 
+from app.api.deps import get_db
 from app.core.config import get_settings
 from app.services.ai_services.order_agent.order_agent import OrderAgent, structure_order
-from app.services.ai_services.order_agent.order_service import retrieve_order_products_by_keyword
+from app.services.ai_services.order_agent.order_service import (
+    retrieve_order_products_by_keyword,
+    with_catalogue_details,
+)
 from app.services.ai_services.order_agent.schema import MatchedOrder
 
 router = APIRouter(prefix="/ai", tags=["ai"])
@@ -19,6 +24,11 @@ def get_english_order_agent() -> OrderAgent:
 
 
 @router.post("/create_order", response_model=MatchedOrder)
-def create_order(body: CreateOrderIn, agent=Depends(get_english_order_agent)) -> MatchedOrder:
+def create_order(
+    body: CreateOrderIn,
+    agent=Depends(get_english_order_agent),
+    db: Session = Depends(get_db),
+) -> MatchedOrder:
     order_structure = structure_order(body.text, agent)
-    return retrieve_order_products_by_keyword(order_structure)
+    matched = retrieve_order_products_by_keyword(order_structure)
+    return with_catalogue_details(db, matched)

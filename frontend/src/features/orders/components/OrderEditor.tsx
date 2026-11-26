@@ -90,7 +90,7 @@ export function OrderEditor({
     ])
   }
 
-  function upsertAiLine(index: number, match: AiProductMatch, price: string, quantity: string) {
+  function upsertAiLine(index: number, match: AiProductMatch, quantity: string) {
     const key = lineKey(index)
     setError(null)
     setLines((current) => {
@@ -99,20 +99,16 @@ export function OrderEditor({
         key,
         productId: match.product_id,
         name: match.name,
-        sku: "",
+        sku: match.sku,
         unitId: match.selling_unit_id,
         quantity: existing?.quantity ?? quantity,
-        unitPrice: price,
+        unitPrice: match.selling_price,
         discountType: existing?.discountType ?? "AMOUNT",
         discountValue: existing?.discountValue ?? "0",
       }
       if (!existing) return [...current, next]
       return current.map((line) => (line.key === key ? next : line))
     })
-  }
-
-  function clearAiLines() {
-    setLines((current) => current.filter((line) => !line.key.startsWith("ai-")))
   }
 
   function validate(): string | null {
@@ -193,7 +189,7 @@ export function OrderEditor({
               </div>
             </Field>
           </Card>
-          {assist ? <AiOrderQuery onUpsert={upsertAiLine} onClear={clearAiLines} onPendingChange={setChoicePending} onExcludedChange={setExcluded} /> : null}
+          {assist ? <AiOrderQuery onUpsert={upsertAiLine} onPendingChange={setChoicePending} onExcludedChange={setExcluded} /> : null}
           <Card className="p-4">
             <OrderProductSearch onSelect={addHit} />
           </Card>

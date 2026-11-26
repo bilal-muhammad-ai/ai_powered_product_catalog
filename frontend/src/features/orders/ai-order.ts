@@ -74,3 +74,8 @@ export function nextChoice(items: ResolvedAiItem[], index: number): number | nul
 export function lineKey(index: number): string {
   return `ai-${index}`
 }
+
+export function appendAiItems(existing: ResolvedAiItem[], incoming: ResolvedAiItem[]): ResolvedAiItem[] {
+  const start = existing.reduce((max, item) => Math.max(max, item.index + 1), 0)
+  return [...existing, ...incoming.map((item, offset) => ({ ...item, index: start + offset }))]
+}

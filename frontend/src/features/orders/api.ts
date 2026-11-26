@@ -141,11 +141,13 @@ export function searchOrderCatalog(q: string) {
 export type AiProductMatch = {
   product_id: string
   name: string
+  sku: string
   category_id: string
   category_name: string
   selling_unit_id: string
   selling_unit_symbol: string
   selling_unit_name: string
+  selling_price: string
   score: number
 }
 
