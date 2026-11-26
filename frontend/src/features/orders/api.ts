@@ -18,6 +18,13 @@ export type OrderItem = {
   discount_amount: string
   subtotal: string
   total: string
+  selling_unit_id: string
+  selling_unit_symbol: string
+  selling_price: string
+  quantity_unit_id: string | null
+  quantity_unit_symbol: string | null
+  quantity_unit_price: string
+  net_quantity: string | null
 }
 
 export type Order = {
@@ -64,6 +71,10 @@ export type OrderCatalogHit = {
   unit_symbol: string
   selling_price: string
   quantity_on_hand: string
+  quantity_unit_id: string | null
+  quantity_unit_symbol: string | null
+  quantity_unit_price: string
+  net_quantity: string | null
 }
 
 export type OrderItemInput = {
@@ -148,6 +159,10 @@ export type AiProductMatch = {
   selling_unit_symbol: string
   selling_unit_name: string
   selling_price: string
+  quantity_unit_id?: string | null
+  quantity_unit_symbol?: string | null
+  quantity_unit_price?: string
+  net_quantity?: string | null
   score: number
 }
 

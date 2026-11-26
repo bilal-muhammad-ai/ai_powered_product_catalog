@@ -53,6 +53,7 @@ export function ProductFormPage() {
   const [netQuantityUnitId, setNetQuantityUnitId] = useState("")
   const [costPrice, setCostPrice] = useState("")
   const [sellingPrice, setSellingPrice] = useState("")
+  const [quantityUnitPrice, setQuantityUnitPrice] = useState("0")
   const [currencyCode, setCurrencyCode] = useState("PKR")
   const [productValues, setProductValues] = useState<Record<string, unknown>>({})
   const [error, setError] = useState<string | null>(null)
@@ -82,6 +83,7 @@ export function ProductFormPage() {
         setNetQuantityUnitId(product.net_quantity_unit_id ?? "")
         setCostPrice(product.cost_price)
         setSellingPrice(product.selling_price)
+        setQuantityUnitPrice(product.quantity_unit_price)
         setCurrencyCode(product.currency_code)
         setProductValues(Object.fromEntries(product.attribute_values.map((item) => [item.attribute_id, item.value])))
       })
@@ -135,6 +137,7 @@ export function ProductFormPage() {
           net_quantity_unit_id: netQuantityUnitId || null,
           cost_price: costPrice,
           selling_price: sellingPrice,
+          quantity_unit_price: quantityUnitPrice || "0",
           currency_code: currencyCode || "PKR",
           attribute_values: toValueList(schema, productValues),
         },
@@ -197,16 +200,6 @@ export function ProductFormPage() {
         <div className="md:col-span-2 border-t border-line pt-4">
           <h2 className="font-display text-xl text-ink">Units and pricing</h2>
         </div>
-        <Field label="Base unit">
-          <select className="field" value={baseUnitId} onChange={(event) => setBaseUnitId(event.target.value)}>
-            <option value="">None</option>
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name} ({unit.symbol})
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Selling unit">
           <select className="field" value={sellingUnitId} onChange={(event) => setSellingUnitId(event.target.value)} required>
             <option value="">Select a unit</option>
@@ -217,8 +210,8 @@ export function ProductFormPage() {
             ))}
           </select>
         </Field>
-        <Field label="Net quantity">
-          <input className="field" value={netQuantity} onChange={(event) => setNetQuantity(event.target.value)} />
+        <Field label="Selling price">
+          <input className="field" value={sellingPrice} onChange={(event) => setSellingPrice(event.target.value)} required />
         </Field>
         <Field label="Quantity unit">
           <select className="field" value={netQuantityUnitId} onChange={(event) => setNetQuantityUnitId(event.target.value)}>
@@ -230,11 +223,14 @@ export function ProductFormPage() {
             ))}
           </select>
         </Field>
+        <Field label="Quantity units in one selling unit">
+          <input className="field" value={netQuantity} onChange={(event) => setNetQuantity(event.target.value)} />
+        </Field>
+        <Field label="Quantity unit price">
+          <input className="field" value={quantityUnitPrice} onChange={(event) => setQuantityUnitPrice(event.target.value)} />
+        </Field>
         <Field label="Cost price">
           <input className="field" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} required />
-        </Field>
-        <Field label="Selling price">
-          <input className="field" value={sellingPrice} onChange={(event) => setSellingPrice(event.target.value)} required />
         </Field>
         <Field label="Currency">
           <input className="field" value={currencyCode} onChange={(event) => setCurrencyCode(event.target.value)} required />

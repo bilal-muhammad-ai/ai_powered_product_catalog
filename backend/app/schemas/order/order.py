@@ -50,6 +50,13 @@ class OrderItemOut(BaseModel):
     discount_amount: Decimal
     subtotal: Decimal
     total: Decimal
+    selling_unit_id: uuid.UUID
+    selling_unit_symbol: str
+    selling_price: Decimal
+    quantity_unit_id: uuid.UUID | None = None
+    quantity_unit_symbol: str | None = None
+    quantity_unit_price: Decimal = Decimal("0")
+    net_quantity: Decimal | None = None
 
     model_config = {"from_attributes": True}
 
@@ -98,3 +105,7 @@ class OrderCatalogHit(BaseModel):
     unit_symbol: str
     selling_price: Decimal
     quantity_on_hand: Decimal
+    quantity_unit_id: uuid.UUID | None = None
+    quantity_unit_symbol: str | None = None
+    quantity_unit_price: Decimal = Decimal("0")
+    net_quantity: Decimal | None = None

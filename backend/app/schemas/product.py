@@ -27,6 +27,7 @@ class ProductWrite(BaseModel):
     net_quantity_unit_id: uuid.UUID | None = None
     cost_price: Decimal = Field(ge=0)
     selling_price: Decimal = Field(ge=0)
+    quantity_unit_price: Decimal = Field(default=Decimal("0"), ge=0)
     currency_code: str = "PKR"
     slug: str | None = Field(default=None, max_length=220)
     attribute_values: list[AttributeValueIn] = Field(default_factory=list)
@@ -72,6 +73,7 @@ class ProductDetail(BaseModel):
     net_quantity_unit_id: uuid.UUID | None
     cost_price: Decimal
     selling_price: Decimal
+    quantity_unit_price: Decimal
     currency_code: str
     status: ProductStatus
     attribute_values: list[AttributeValueOut]

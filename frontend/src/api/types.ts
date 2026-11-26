@@ -81,6 +81,7 @@ export type ProductDetail = {
   net_quantity_unit_id: string | null
   cost_price: string
   selling_price: string
+  quantity_unit_price: string
   currency_code: string
   status: "draft" | "active" | "archived"
   attribute_values: AttributeValue[]

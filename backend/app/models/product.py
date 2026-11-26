@@ -31,6 +31,7 @@ class Product(UUIDMixin, TimestampMixin, Base):
         Index("ix_products_status", "status"),
         CheckConstraint("cost_price >= 0", name="ck_product_cost_nonnegative"),
         CheckConstraint("selling_price >= 0", name="ck_product_price_nonnegative"),
+        CheckConstraint("quantity_unit_price >= 0", name="ck_product_quantity_price_nonnegative"),
         CheckConstraint("net_quantity IS NULL OR net_quantity > 0", name="ck_product_net_quantity_positive"),
         CheckConstraint(
             "net_quantity IS NULL OR net_quantity_unit_id IS NOT NULL",
@@ -67,6 +68,12 @@ class Product(UUIDMixin, TimestampMixin, Base):
     )
     cost_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     selling_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    quantity_unit_price: Mapped[Decimal] = mapped_column(
+        Numeric(14, 2),
+        nullable=False,
+        default=Decimal("0"),
+        server_default="0",
+    )
     currency_code: Mapped[str] = mapped_column(String(3), default="PKR", server_default="PKR", nullable=False)
     status: Mapped[ProductStatus] = mapped_column(
         Enum(ProductStatus, name="product_status", native_enum=False, length=16),

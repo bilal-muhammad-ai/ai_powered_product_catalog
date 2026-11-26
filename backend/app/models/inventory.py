@@ -137,7 +137,7 @@ class InventoryTransaction(UUIDMixin, TimestampMixin, Base):
 class InventoryTransactionItem(UUIDMixin, Base):
     __tablename__ = "inventory_transaction_items"
     __table_args__ = (
-        UniqueConstraint("transaction_id", "product_id", name="uq_inventory_item_product"),
+        UniqueConstraint("transaction_id", "product_id", "unit_id", name="uq_inventory_item_product_unit"),
         CheckConstraint("quantity >= 0", name="ck_inventory_item_quantity_nonnegative"),
         CheckConstraint("unit_cost >= 0", name="ck_inventory_item_unit_cost_nonnegative"),
         CheckConstraint("total_cost >= 0", name="ck_inventory_item_total_cost_nonnegative"),

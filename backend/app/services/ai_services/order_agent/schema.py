@@ -56,6 +56,10 @@ class ProductMatch(BaseModel):
     selling_unit_symbol: str
     selling_unit_name: str
     selling_price: Decimal
+    quantity_unit_id: str | None = None
+    quantity_unit_symbol: str | None = None
+    quantity_unit_price: Decimal = Decimal("0")
+    net_quantity: Decimal | None = None
     score: float
 
 
