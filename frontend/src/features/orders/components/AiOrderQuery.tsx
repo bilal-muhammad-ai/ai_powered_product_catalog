@@ -1,9 +1,9 @@
 import { Sparkles } from "lucide-react"
-import { useEffect, useState } from "react"
-import { getProduct } from "../../../api/resources"
+import { useEffect, useRef, useState } from "react"
 import { Button, Field } from "../../../components/ui"
 import { suggestOrder, type AiProductMatch } from "../api"
 import {
+  appendAiItems,
   choiceIndexes,
   choicePosition,
   firstPendingChoice,
@@ -19,22 +19,20 @@ const PLACEHOLDER = "Describe the order, for example: 2 bags of DG cement, 10 pa
 
 export function AiOrderQuery({
   onUpsert,
-  onClear,
   onPendingChange,
   onExcludedChange,
 }: {
-  onUpsert: (index: number, match: AiProductMatch, price: string, quantity: string) => void
-  onClear: () => void
+  onUpsert: (index: number, match: AiProductMatch, quantity: string) => void
   onPendingChange: (pending: boolean) => void
   onExcludedChange: (names: string[]) => void
 }) {
   const [text, setText] = useState("")
   const [items, setItems] = useState<ResolvedAiItem[]>([])
+  const itemsRef = useRef(items)
+  itemsRef.current = items
   const [cursor, setCursor] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const [choosing, setChoosing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [failed, setFailed] = useState<Record<number, string>>({})
 
   useEffect(() => {
     onPendingChange(hasPendingChoice(items))
@@ -50,14 +48,8 @@ export function AiOrderQuery({
   const position = current ? choicePosition(items, current.index) : null
   const choices = choiceIndexes(items)
 
-  async function addPriced(item: ResolvedAiItem, match: AiProductMatch) {
-    const product = await getProduct(match.product_id)
-    onUpsert(item.index, match, String(product.selling_price), item.quantity)
-    setFailed((currentFailed) => {
-      const next = { ...currentFailed }
-      delete next[item.index]
-      return next
-    })
+  function addSelected(item: ResolvedAiItem, match: AiProductMatch) {
+    onUpsert(item.index, match, item.quantity)
   }
 
   async function find() {
@@ -65,32 +57,16 @@ export function AiOrderQuery({
     if (!query || loading) return
     setLoading(true)
     setError(null)
-    setFailed({})
-    setItems([])
-    setCursor(null)
-    publish([])
-    onClear()
     try {
       const resolved = resolveAiOrder(await suggestOrder(query))
-      setItems(resolved)
-      setCursor(firstPendingChoice(resolved))
-      publish(resolved)
-      const singles = resolved.filter((item) => item.products.length === 1)
-      const problems = await Promise.all(
-        singles.map(async (item) => {
-          try {
-            await addPriced(item, item.products[0])
-            return null
-          } catch (reason) {
-            return { index: item.index, message: reason instanceof Error ? reason.message : "Could not load the product price" }
-          }
-        }),
-      )
-      const nextFailed: Record<number, string> = {}
-      for (const problem of problems) {
-        if (problem) nextFailed[problem.index] = problem.message
+      const nextItems = appendAiItems(itemsRef.current, resolved)
+      const added = nextItems.slice(itemsRef.current.length)
+      setItems(nextItems)
+      setCursor(firstPendingChoice(nextItems))
+      publish(nextItems)
+      for (const item of added) {
+        if (item.products.length === 1) addSelected(item, item.products[0])
       }
-      setFailed(nextFailed)
       if (resolved.length === 0) setError("No products were found in that description.")
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not read that order")
@@ -99,32 +75,16 @@ export function AiOrderQuery({
     }
   }
 
-  async function retry(item: ResolvedAiItem, match: AiProductMatch) {
-    try {
-      await addPriced(item, match)
-    } catch (reason) {
-      const message = reason instanceof Error ? reason.message : "Could not load the product price"
-      setFailed((currentFailed) => ({ ...currentFailed, [item.index]: message }))
-    }
-  }
-
-  async function choose(productId: string) {
-    if (!current || choosing) return
+  function choose(productId: string) {
+    if (!current) return
     const match = current.products.find((product) => product.product_id === productId)
     if (!match) return
-    setChoosing(true)
     setError(null)
-    try {
-      await addPriced(current, match)
-      const nextItems = selectAiItem(items, current.index, productId)
-      setItems(nextItems)
-      setCursor(firstPendingChoice(nextItems))
-      publish(nextItems)
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not load the product price")
-    } finally {
-      setChoosing(false)
-    }
+    addSelected(current, match)
+    const nextItems = selectAiItem(items, current.index, productId)
+    setItems(nextItems)
+    setCursor(firstPendingChoice(nextItems))
+    publish(nextItems)
   }
 
   function review() {
@@ -152,7 +112,7 @@ export function AiOrderQuery({
           onChange={(event) => setText(event.target.value)}
         />
       </Field>
-      <Button className="mt-3" disabled={loading || choosing || text.trim().length === 0} onClick={() => void find()}>
+      <Button className="mt-3" disabled={loading || text.trim().length === 0} onClick={() => void find()}>
         {loading ? "Finding products…" : "Find products"}
       </Button>
       {error ? <p className="mt-3 text-sm text-red-800">{error}</p> : null}
@@ -161,19 +121,13 @@ export function AiOrderQuery({
           {items.map((item) => {
             if (item.products.length === 1) {
               const match = item.products[0]
-              const problem = failed[item.index]
               return (
                 <li key={item.index} className="rounded-lg border border-pine/20 bg-paper px-3 py-2 text-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-pine">{problem ? "Price unavailable" : "Selected"}</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-pine">Selected</p>
                   <p className="font-medium">{match.name}</p>
                   <p className="text-stone-600">
                     {item.label} · Quantity {item.quantity} {match.selling_unit_symbol}
                   </p>
-                  {problem ? (
-                    <Button variant="ghost" className="mt-2" onClick={() => void retry(item, match)}>
-                      Retry
-                    </Button>
-                  ) : null}
                 </li>
               )
             }
@@ -213,8 +167,7 @@ export function AiOrderQuery({
                     name={`ai-choice-${current.index}`}
                     value={match.product_id}
                     checked={selected}
-                    disabled={choosing}
-                    onChange={() => void choose(match.product_id)}
+                    onChange={() => choose(match.product_id)}
                   />
                   <span>
                     <span className="block font-medium">{match.name}</span>

@@ -49,11 +49,13 @@ class StructuredOrder(BaseModel):
 class ProductMatch(BaseModel):
     product_id: str
     name: str
+    sku: str
     category_id: str
     category_name: str
     selling_unit_id: str
     selling_unit_symbol: str
     selling_unit_name: str
+    selling_price: Decimal
     score: float
 
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AiOrder, AiProductMatch } from "./api"
 import {
+  appendAiItems,
   choicePosition,
   firstPendingChoice,
   hasPendingChoice,
@@ -19,6 +20,8 @@ function match(id: string, name: string): AiProductMatch {
     selling_unit_id: "pc",
     selling_unit_symbol: "pc",
     selling_unit_name: "Piece",
+    sku: "SKU",
+    selling_price: "10.00",
     score: 1,
   }
 }
@@ -74,5 +77,20 @@ describe("resolveAiOrder", () => {
     expect(previousChoice(items, 3)).toBe(1)
     expect(nextChoice(items, 1)).toBe(3)
     expect(hasPendingChoice(selectAiItem(items, 3, "tile-1"))).toBe(false)
+  })
+
+  it("continues indexes when another search is appended", () => {
+    const existing = resolveAiOrder(order())
+    const incoming = resolveAiOrder({
+      intent: "create_order",
+      items: [{ product_name: "sand", quantity: 3, unit: "bag", products: [match("sand", "River Sand")] }],
+    })
+
+    const combined = appendAiItems(existing, incoming)
+
+    expect(combined.map((item) => item.index)).toEqual([0, 1, 2, 3, 4])
+    expect(combined[4].label).toBe("sand")
+    expect(combined[4].selectedProductId).toBe("sand")
+    expect(appendAiItems(combined, incoming).map((item) => item.index)).toEqual([0, 1, 2, 3, 4, 5])
   })
 })

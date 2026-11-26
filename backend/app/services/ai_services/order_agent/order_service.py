@@ -1,9 +1,16 @@
 from __future__ import annotations
 
+import uuid
+from decimal import Decimal
 from functools import lru_cache
 from typing import Protocol
 
+from sqlalchemy import select
+from sqlalchemy.orm import Session, selectinload
+
 from app.core.config import get_settings
+from app.models.enums import ProductStatus
+from app.models.product import Product
 from app.services.ai_services.order_agent.schema import (
     MatchedOrder,
     MatchedOrderItem,
@@ -68,10 +75,76 @@ def _match(product: RetrievedProduct) -> ProductMatch:
     return ProductMatch(
         product_id=product.product_id,
         name=product.name,
+        sku="",
         category_id=product.category_id,
         category_name=product.category_name,
         selling_unit_id=product.selling_unit_id,
         selling_unit_symbol=product.selling_unit_symbol,
         selling_unit_name=product.selling_unit_name,
+        selling_price=Decimal("0"),
         score=product.score,
     )
+
+
+def with_catalogue_details(db: Session, matched: MatchedOrder) -> MatchedOrder:
+    """Replace retrieved match fields with the active catalogue row for each product id."""
+    ids = {parsed for product_id in _product_ids(matched) if (parsed := _parse_id(product_id)) is not None}
+    rows = _active_products(db, ids)
+    return matched.model_copy(
+        update={
+            "items": [
+                item.model_copy(update={"products": _catalogue_products(item.products, rows)})
+                for item in matched.items
+            ]
+        }
+    )
+
+
+def _product_ids(matched: MatchedOrder) -> list[str]:
+    return [product.product_id for item in matched.items for product in item.products]
+
+
+def _parse_id(product_id: str) -> uuid.UUID | None:
+    try:
+        return uuid.UUID(product_id)
+    except ValueError:
+        return None
+
+
+def _active_products(db: Session, ids: set[uuid.UUID]) -> dict[uuid.UUID, Product]:
+    if not ids:
+        return {}
+    stmt = (
+        select(Product)
+        .where(
+            Product.id.in_(ids),
+            Product.deleted_at.is_(None),
+            Product.status == ProductStatus.active,
+        )
+        .options(selectinload(Product.category), selectinload(Product.selling_unit))
+    )
+    return {product.id: product for product in db.scalars(stmt)}
+
+
+def _catalogue_products(matches: list[ProductMatch], rows: dict[uuid.UUID, Product]) -> list[ProductMatch]:
+    products: list[ProductMatch] = []
+    for match in matches:
+        product_id = _parse_id(match.product_id)
+        product = rows.get(product_id) if product_id is not None else None
+        if product is None:
+            continue
+        products.append(
+            ProductMatch(
+                product_id=str(product.id),
+                name=product.name,
+                sku=product.sku,
+                category_id=str(product.category_id),
+                category_name=product.category.name,
+                selling_unit_id=str(product.selling_unit_id),
+                selling_unit_symbol=product.selling_unit.symbol,
+                selling_unit_name=product.selling_unit.name,
+                selling_price=product.selling_price,
+                score=match.score,
+            )
+        )
+    return products
