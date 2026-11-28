@@ -5,6 +5,20 @@ import { cancelOrder, confirmOrder, listOrders, type OrderListItem } from "../ap
 import { OrderStatusBadge } from "../components/OrderStatusBadge"
 import { formatPkr } from "../logic"
 
+type OrderFilters = {
+  q: string
+  status: string
+  dateFrom: string
+  dateTo: string
+}
+
+const emptyOrderFilters: OrderFilters = {
+  q: "",
+  status: "",
+  dateFrom: "",
+  dateTo: "",
+}
+
 export function OrderListPage() {
   const [items, setItems] = useState<OrderListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -17,13 +31,14 @@ export function OrderListPage() {
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState<{ id: string; action: "confirm" | "cancel"; number: string } | null>(null)
 
-  async function reload(nextPage = page) {
+  async function reload(nextPage = page, filters?: OrderFilters) {
+    const current = filters ?? { q, status, dateFrom, dateTo }
     setLoading(true)
     const result = await listOrders({
-      q,
-      status,
-      date_from: dateFrom,
-      date_to: dateTo,
+      q: current.q,
+      status: current.status,
+      date_from: current.dateFrom,
+      date_to: current.dateTo,
       page: String(nextPage),
       page_size: "20",
       sort: "order_date",
@@ -41,6 +56,17 @@ export function OrderListPage() {
       setLoading(false)
     })
   }, [])
+
+  function clearFilters() {
+    setQ(emptyOrderFilters.q)
+    setStatus(emptyOrderFilters.status)
+    setDateFrom(emptyOrderFilters.dateFrom)
+    setDateTo(emptyOrderFilters.dateTo)
+    reload(1, emptyOrderFilters).catch((reason: Error) => {
+      setError(reason.message)
+      setLoading(false)
+    })
+  }
 
   async function runPending() {
     if (!pending) return
@@ -101,9 +127,12 @@ export function OrderListPage() {
         <Field label="To">
           <input className="field" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
         </Field>
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <button className="btn" type="submit">
             Apply filters
+          </button>
+          <button className="btn-ghost" type="button" onClick={clearFilters}>
+            Clear
           </button>
         </div>
         </Card>

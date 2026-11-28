@@ -64,7 +64,7 @@ export type OrderListItem = {
 export type OrderCatalogHit = {
   product_id: string
   name: string
-  sku: string
+  sku: string | null
   category_id: string
   category_name: string
   unit_id: string

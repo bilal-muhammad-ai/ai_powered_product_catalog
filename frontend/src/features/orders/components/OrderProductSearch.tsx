@@ -55,7 +55,7 @@ export function OrderProductSearch({ onSelect }: { onSelect: (hit: OrderCatalogH
                 <span className="min-w-0">
                   <span className="block font-medium text-ink">{hit.name}</span>
                   <span className="block text-xs text-stone-500">
-                    {hit.sku} · {hit.category_name}
+                    {[hit.sku, hit.category_name].filter(Boolean).join(" · ")}
                   </span>
                 </span>
                 <span className="shrink-0 text-right text-stone-600">

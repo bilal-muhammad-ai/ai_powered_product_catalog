@@ -96,7 +96,7 @@ def _build_item(db: Session, data: OrderItemIn) -> OrderItem:
     return OrderItem(
         product_id=product.id,
         product_name_snapshot=product.name,
-        sku_snapshot=product.sku,
+        sku_snapshot=product.sku or "",
         unit_id=unit.id,
         unit_name_snapshot=unit.symbol,
         quantity=q_qty(data.quantity),

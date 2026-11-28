@@ -141,7 +141,7 @@ def _catalogue_products(matches: list[ProductMatch], rows: dict[uuid.UUID, Produ
             ProductMatch(
                 product_id=str(product.id),
                 name=product.name,
-                sku=product.sku,
+                sku=product.sku or "",
                 category_id=str(product.category_id),
                 category_name=product.category.name,
                 selling_unit_id=str(product.selling_unit_id),

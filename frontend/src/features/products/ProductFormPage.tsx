@@ -70,7 +70,7 @@ export function ProductFormPage() {
         setSchema(attributes.filter((attribute) => attribute.is_active))
         setCategoryId(product.category_id)
         setName(product.name)
-        setSku(product.sku)
+        setSku(product.sku ?? "")
         setBarcode(product.barcode ?? "")
         setCode(product.code ?? "")
         setDescription(product.description ?? "")
@@ -122,7 +122,7 @@ export function ProductFormPage() {
         {
           category_id: categoryId,
           name,
-          sku,
+          sku: sku || null,
           barcode: barcode || null,
           code: code || null,
           description: description || null,
@@ -176,7 +176,7 @@ export function ProductFormPage() {
           <input className="field" value={name} onChange={(event) => setName(event.target.value)} required />
         </Field>
         <Field label="SKU">
-          <input className="field" value={sku} onChange={(event) => setSku(event.target.value)} required />
+          <input className="field" value={sku} onChange={(event) => setSku(event.target.value)} />
         </Field>
         <Field label="Code">
           <input className="field" value={code} onChange={(event) => setCode(event.target.value)} />

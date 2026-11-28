@@ -53,7 +53,7 @@ export function AdjustmentForm({
         key: hit.product_id,
         productId: hit.product_id,
         name: hit.name,
-        sku: hit.sku,
+        sku: hit.sku ?? "",
         systemStock: Number(hit.quantity_on_hand),
         unitId: hit.unit_id,
         unitSymbol: hit.unit_symbol,

@@ -53,7 +53,7 @@ export function InventoryDetailPage() {
     <div>
       <PageHeader
         title={detail?.product_name ?? "Stock"}
-        lede={detail ? `${detail.sku} · ${detail.category_name}` : undefined}
+        lede={detail ? [detail.sku, detail.category_name].filter(Boolean).join(" · ") : undefined}
         action={
           <div className="flex flex-wrap gap-2">
             <Link className="btn" to={`/inventory/receipts/new?product=${productId}`}>
@@ -116,14 +116,19 @@ export function InventoryDetailPage() {
           </form>
           <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
             <h2 className="font-display text-xl">Stock movement history</h2>
-            <select className="field w-auto" value={kind} onChange={(event) => setKind(event.target.value)}>
-              <option value="">All movements</option>
-              <option value="OPENING_STOCK">Opening stock</option>
-              <option value="STOCK_RECEIPT">Receipts</option>
-              <option value="STOCK_ISSUE">Issues</option>
-              <option value="STOCK_ADJUSTMENT">Adjustments</option>
-              <option value="REVERSAL">Reversals</option>
-            </select>
+            <div className="flex items-end gap-2">
+              <select className="field w-auto" value={kind} onChange={(event) => setKind(event.target.value)}>
+                <option value="">All movements</option>
+                <option value="OPENING_STOCK">Opening stock</option>
+                <option value="STOCK_RECEIPT">Receipts</option>
+                <option value="STOCK_ISSUE">Issues</option>
+                <option value="STOCK_ADJUSTMENT">Adjustments</option>
+                <option value="REVERSAL">Reversals</option>
+              </select>
+              <button className="btn-ghost" type="button" onClick={() => setKind("")}>
+                Clear
+              </button>
+            </div>
           </div>
           <DataTable className="min-w-[760px]">
               <thead className={tableHeadClass}>

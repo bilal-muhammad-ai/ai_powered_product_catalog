@@ -76,7 +76,7 @@ export function StockDocumentForm({
         key: hit.product_id,
         productId: hit.product_id,
         name: hit.name,
-        sku: hit.sku,
+        sku: hit.sku ?? "",
         available: Number(hit.quantity_on_hand),
         sellingUnitId: hit.unit_id,
         unitId: hit.unit_id,

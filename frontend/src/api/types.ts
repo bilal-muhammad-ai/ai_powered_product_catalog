@@ -70,7 +70,7 @@ export type ProductDetail = {
   category_id: string
   category_name: string
   base_unit_id: string | null
-  sku: string
+  sku: string | null
   barcode: string | null
   name: string
   slug: string
@@ -90,7 +90,7 @@ export type ProductDetail = {
 export type ProductListItem = {
   id: string
   name: string
-  sku: string
+  sku: string | null
   code: string | null
   slug: string
   status: ProductDetail["status"]
