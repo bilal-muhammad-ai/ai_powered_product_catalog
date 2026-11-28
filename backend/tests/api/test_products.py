@@ -48,7 +48,6 @@ def _product(unit_id, name, sku, type_id, type_option, weight_id, weight_option,
         "name": name,
         "sku": sku,
         "selling_unit_id": unit_id,
-        "cost_price": "900",
         "selling_price": price,
         "attribute_values": [
             {"attribute_id": type_id, "value": type_option},

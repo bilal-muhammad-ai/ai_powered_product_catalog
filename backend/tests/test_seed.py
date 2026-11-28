@@ -68,7 +68,6 @@ def test_seed_loads_catalogue_and_is_idempotent(db):
     assert bag.name == "Maple Leaf Cement OPC 43 — 50 kg bag"
     assert bag.selling_price == Decimal("1480.00")
     assert bag.net_quantity == Decimal("50")
-    assert bag.currency_code == "PKR"
 
     small = db.scalar(select(Product).where(Product.sku == "CEM-ML-OPC43-20"))
     assert small is not None

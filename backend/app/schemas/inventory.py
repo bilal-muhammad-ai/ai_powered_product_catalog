@@ -137,8 +137,6 @@ class BalanceItem(BaseModel):
 
 
 class InventoryDetail(BalanceItem):
-    cost_price: Decimal
-    currency_code: str
     barcode: str | None
     net_quantity: Decimal | None
     net_quantity_unit_symbol: str | None

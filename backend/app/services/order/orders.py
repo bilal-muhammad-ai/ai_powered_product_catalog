@@ -54,7 +54,11 @@ def _load(db: Session, order_id: uuid.UUID) -> Order:
     order = db.scalar(
         select(Order)
         .where(Order.id == order_id)
-        .options(selectinload(Order.items), selectinload(Order.inventory_transaction))
+        .options(
+            selectinload(Order.items).selectinload(OrderItem.product).selectinload(Product.selling_unit),
+            selectinload(Order.items).selectinload(OrderItem.product).selectinload(Product.net_quantity_unit),
+            selectinload(Order.inventory_transaction),
+        )
     )
     if order is None:
         raise CatalogueError("Order not found", 404)
@@ -129,6 +133,34 @@ def _replace_items(db: Session, order: Order, items: list[OrderItem]) -> None:
     db.flush()
 
 
+def _item_out(item: OrderItem) -> OrderItemOut:
+    product = item.product
+    selling = None if product is None else product.selling_unit
+    quantity_unit = None if product is None else product.net_quantity_unit
+    return OrderItemOut(
+        id=item.id,
+        product_id=item.product_id,
+        product_name_snapshot=item.product_name_snapshot,
+        sku_snapshot=item.sku_snapshot,
+        unit_id=item.unit_id,
+        unit_name_snapshot=item.unit_name_snapshot,
+        quantity=item.quantity,
+        unit_price=item.unit_price,
+        discount_type=item.discount_type,
+        discount_value=item.discount_value,
+        discount_amount=item.discount_amount,
+        subtotal=item.subtotal,
+        total=item.total,
+        selling_unit_id=item.unit_id if product is None else product.selling_unit_id,
+        selling_unit_symbol=item.unit_name_snapshot if selling is None else selling.symbol,
+        selling_price=item.unit_price if product is None else product.selling_price,
+        quantity_unit_id=None if product is None else product.net_quantity_unit_id,
+        quantity_unit_symbol=None if quantity_unit is None else quantity_unit.symbol,
+        quantity_unit_price=Decimal("0") if product is None else product.quantity_unit_price,
+        net_quantity=None if product is None else product.net_quantity,
+    )
+
+
 def to_order_out(order: Order) -> OrderOut:
     quantity = q_qty(sum((item.quantity for item in order.items), Decimal("0")))
     transaction = order.inventory_transaction
@@ -153,7 +185,7 @@ def to_order_out(order: Order) -> OrderOut:
         updated_at=order.updated_at,
         inventory_transaction_id=order.inventory_transaction_id,
         inventory_transaction_number=None if transaction is None else transaction.transaction_number,
-        items=[OrderItemOut.model_validate(item) for item in order.items],
+        items=[_item_out(item) for item in order.items],
     )
 
 

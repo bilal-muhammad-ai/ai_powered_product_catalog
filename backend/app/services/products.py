@@ -90,6 +90,12 @@ def save_product(db: Session, data: ProductWrite, product: Product | None = None
     get_unit_if_present(db, data.selling_unit_id, errors, "selling_unit_id")
     if data.net_quantity is not None and data.net_quantity_unit_id is None:
         errors.add("net_quantity_unit_id", "Choose a unit for the net quantity")
+    if (
+        data.net_quantity_unit_id is not None
+        and data.net_quantity_unit_id != data.selling_unit_id
+        and data.net_quantity is None
+    ):
+        errors.add("net_quantity", "Enter how many quantity units are in one selling unit")
     if data.net_quantity_unit_id is not None:
         get_unit_if_present(db, data.net_quantity_unit_id, errors, "net_quantity_unit_id")
     schema = effective_attributes(db, category.id, active_only=True, include_inherited=True)
@@ -116,9 +122,8 @@ def save_product(db: Session, data: ProductWrite, product: Product | None = None
         "selling_unit_id": data.selling_unit_id,
         "net_quantity": data.net_quantity,
         "net_quantity_unit_id": data.net_quantity_unit_id,
-        "cost_price": _money(data.cost_price),
         "selling_price": _money(data.selling_price),
-        "currency_code": data.currency_code,
+        "quantity_unit_price": _money(data.quantity_unit_price),
     }
     if product is None:
         product = Product(
@@ -254,9 +259,8 @@ def to_detail(product: Product) -> ProductDetail:
         selling_unit_id=product.selling_unit_id,
         net_quantity=product.net_quantity,
         net_quantity_unit_id=product.net_quantity_unit_id,
-        cost_price=product.cost_price,
         selling_price=product.selling_price,
-        currency_code=product.currency_code,
+        quantity_unit_price=product.quantity_unit_price,
         status=product.status,
         attribute_values=attribute_values,
         created_at=product.created_at,
@@ -390,7 +394,6 @@ def list_products(
             category_id=product.category_id,
             category_name=category_name,
             selling_price=product.selling_price,
-            currency_code=product.currency_code,
             updated_at=product.updated_at,
         )
         for product, category_name in rows

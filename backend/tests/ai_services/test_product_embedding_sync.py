@@ -71,7 +71,6 @@ def _catalogue(db: Session) -> tuple[Product, TrackingSession]:
         name="OPC Cement 50 kg",
         slug=f"cem-{suffix}",
         selling_unit_id=unit.id,
-        cost_price=Decimal("900.00"),
         selling_price=Decimal("1100.00"),
     )
     db.add(product)

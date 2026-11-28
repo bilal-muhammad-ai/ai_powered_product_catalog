@@ -79,9 +79,8 @@ export type ProductDetail = {
   selling_unit_id: string
   net_quantity: string | null
   net_quantity_unit_id: string | null
-  cost_price: string
   selling_price: string
-  currency_code: string
+  quantity_unit_price: string
   status: "draft" | "active" | "archived"
   attribute_values: AttributeValue[]
   created_at: string
@@ -98,6 +97,5 @@ export type ProductListItem = {
   category_id: string
   category_name: string
   selling_price: string
-  currency_code: string
   updated_at: string
 }

@@ -25,19 +25,10 @@ class ProductWrite(BaseModel):
     selling_unit_id: uuid.UUID
     net_quantity: Decimal | None = Field(default=None, gt=0)
     net_quantity_unit_id: uuid.UUID | None = None
-    cost_price: Decimal = Field(ge=0)
     selling_price: Decimal = Field(ge=0)
-    currency_code: str = "PKR"
+    quantity_unit_price: Decimal = Field(default=Decimal("0"), ge=0)
     slug: str | None = Field(default=None, max_length=220)
     attribute_values: list[AttributeValueIn] = Field(default_factory=list)
-
-    @field_validator("currency_code")
-    @classmethod
-    def currency(cls, value: str) -> str:
-        code = value.strip().upper()
-        if len(code) != 3 or not code.isalpha():
-            raise ValueError("Currency must be a 3-letter code")
-        return code
 
     @field_validator("name", "sku", "barcode", "code", "slug")
     @classmethod
@@ -70,9 +61,8 @@ class ProductDetail(BaseModel):
     selling_unit_id: uuid.UUID
     net_quantity: Decimal | None
     net_quantity_unit_id: uuid.UUID | None
-    cost_price: Decimal
     selling_price: Decimal
-    currency_code: str
+    quantity_unit_price: Decimal
     status: ProductStatus
     attribute_values: list[AttributeValueOut]
     created_at: datetime
@@ -89,5 +79,4 @@ class ProductListItem(BaseModel):
     category_id: uuid.UUID
     category_name: str
     selling_price: Decimal
-    currency_code: str
     updated_at: datetime

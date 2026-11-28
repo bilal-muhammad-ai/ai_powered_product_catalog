@@ -248,8 +248,6 @@ def get_balance(db: Session, product_id: uuid.UUID) -> InventoryDetail:
         item = _to_balance(*row)
     return InventoryDetail(
         **item.model_dump(),
-        cost_price=product.cost_price,
-        currency_code=product.currency_code,
         barcode=product.barcode,
         net_quantity=product.net_quantity,
         net_quantity_unit_symbol=net_symbol,

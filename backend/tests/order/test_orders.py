@@ -20,7 +20,6 @@ def _product(client, unit_id, name, sku, **extra):
         "name": name,
         "sku": sku,
         "selling_unit_id": unit_id,
-        "cost_price": "900",
         "selling_price": "1100",
         "status": "active",
         "attribute_values": [],
@@ -143,7 +142,6 @@ def test_draft_totals_edit_and_snapshots(client):
             "name": "Renamed cement",
             "sku": product["sku"],
             "selling_unit_id": bag["id"],
-            "cost_price": product["cost_price"],
             "selling_price": "1500",
             "status": "active",
             "attribute_values": [],
@@ -324,6 +322,153 @@ def test_delete_draft_add_and_remove_items_and_filters(client):
     deleted = client.delete(f"/api/v1/orders/{order_id}")
     assert deleted.status_code == 204
     assert client.get(f"/api/v1/orders/{order_id}").status_code == 404
+
+
+def test_quantity_unit_price_and_stock_conversion(client):
+    piece = _unit(client, "Piece", f"pc-{uuid.uuid4().hex[:6]}", "count")
+    foot = _unit(client, "Feet", f"ft-{uuid.uuid4().hex[:6]}", "length")
+    pipe = _product(
+        client,
+        piece["id"],
+        "Soil pipe",
+        f"PIPE-{uuid.uuid4().hex[:6]}",
+        net_quantity="20",
+        net_quantity_unit_id=foot["id"],
+        selling_price="500",
+        quantity_unit_price="25",
+    )
+    assert pipe["quantity_unit_price"] == "25.00"
+    assert pipe["selling_price"] == "500.00"
+    missing = client.post(
+        "/api/v1/products",
+        json={
+            "category_id": pipe["category_id"],
+            "name": "Open pipe",
+            "sku": f"OPEN-{uuid.uuid4().hex[:6]}",
+            "selling_unit_id": piece["id"],
+            "net_quantity_unit_id": foot["id"],
+            "selling_price": "2",
+            "status": "active",
+            "attribute_values": [],
+        },
+    )
+    assert missing.status_code == 422
+
+    _stock(client, pipe["id"], piece["id"], "10", "400")
+    pieces = _order(
+        client,
+        pipe["id"],
+        piece["id"],
+        items=[
+            {
+                "product_id": pipe["id"],
+                "unit_id": piece["id"],
+                "quantity": "2",
+                "unit_price": "500",
+                "discount_type": "AMOUNT",
+                "discount_value": "0",
+            }
+        ],
+    )
+    assert pieces.status_code == 201, pieces.text
+    assert pieces.json()["items"][0]["subtotal"] == "1000.00"
+    confirmed_pieces = client.post(f"/api/v1/orders/{pieces.json()['id']}/confirm")
+    assert confirmed_pieces.status_code == 200, confirmed_pieces.text
+    assert client.get(f"/api/v1/inventory/{pipe['id']}").json()["quantity_on_hand"] == "8.0000"
+
+    feet = _order(
+        client,
+        pipe["id"],
+        foot["id"],
+        discount_type="AMOUNT",
+        discount_value="10",
+        items=[
+            {
+                "product_id": pipe["id"],
+                "unit_id": foot["id"],
+                "quantity": "7",
+                "unit_price": "25",
+                "discount_type": "AMOUNT",
+                "discount_value": "5",
+            }
+        ],
+    )
+    assert feet.status_code == 201, feet.text
+    body = feet.json()
+    assert body["items"][0]["subtotal"] == "175.00"
+    assert body["items"][0]["total"] == "170.00"
+    assert body["grand_total"] == "160.00"
+    confirmed_feet = client.post(f"/api/v1/orders/{body['id']}/confirm")
+    assert confirmed_feet.status_code == 200, confirmed_feet.text
+    movement = client.get(f"/api/v1/inventory/transactions/{confirmed_feet.json()['inventory_transaction_id']}")
+    assert movement.status_code == 200, movement.text
+    line = movement.json()["items"][0]
+    assert line["unit_id"] == foot["id"]
+    assert Decimal(line["quantity"]) == Decimal("7")
+    assert Decimal(line["quantity_delta"]) == Decimal("-0.35")
+    assert client.get(f"/api/v1/inventory/{pipe['id']}").json()["quantity_on_hand"] == "7.6500"
+
+    short = _order(
+        client,
+        pipe["id"],
+        piece["id"],
+        items=[
+            {
+                "product_id": pipe["id"],
+                "unit_id": piece["id"],
+                "quantity": "8",
+                "unit_price": "500",
+                "discount_type": "AMOUNT",
+                "discount_value": "0",
+            },
+            {
+                "product_id": pipe["id"],
+                "unit_id": foot["id"],
+                "quantity": "7",
+                "unit_price": "25",
+                "discount_type": "AMOUNT",
+                "discount_value": "0",
+            },
+        ],
+    )
+    assert short.status_code == 201, short.text
+    refused = client.post(f"/api/v1/orders/{short.json()['id']}/confirm")
+    assert refused.status_code == 422
+    assert client.get(f"/api/v1/inventory/{pipe['id']}").json()["quantity_on_hand"] == "7.6500"
+
+    cancelled = client.post(f"/api/v1/orders/{body['id']}/cancel")
+    assert cancelled.status_code == 200, cancelled.text
+    assert client.get(f"/api/v1/inventory/{pipe['id']}").json()["quantity_on_hand"] == "8.0000"
+
+    box_unit = _unit(client, "Box", f"box-{uuid.uuid4().hex[:6]}", "packaging")
+    toffee_unit = _unit(client, "Toffee", f"tf-{uuid.uuid4().hex[:6]}", "count")
+    box = _product(
+        client,
+        box_unit["id"],
+        "Toffee box",
+        f"TOF-{uuid.uuid4().hex[:6]}",
+        net_quantity="20",
+        net_quantity_unit_id=toffee_unit["id"],
+        selling_price="80",
+        quantity_unit_price="5",
+    )
+    packed = _order(
+        client,
+        box["id"],
+        box_unit["id"],
+        items=[
+            {
+                "product_id": box["id"],
+                "unit_id": box_unit["id"],
+                "quantity": "1",
+                "unit_price": "80",
+                "discount_type": "AMOUNT",
+                "discount_value": "0",
+            }
+        ],
+    )
+    assert packed.status_code == 201, packed.text
+    assert packed.json()["items"][0]["subtotal"] == "80.00"
 
 
 def test_complete_is_terminal_for_stock(client):

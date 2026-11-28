@@ -51,9 +51,8 @@ export function ProductFormPage() {
   const [sellingUnitId, setSellingUnitId] = useState("")
   const [netQuantity, setNetQuantity] = useState("")
   const [netQuantityUnitId, setNetQuantityUnitId] = useState("")
-  const [costPrice, setCostPrice] = useState("")
   const [sellingPrice, setSellingPrice] = useState("")
-  const [currencyCode, setCurrencyCode] = useState("PKR")
+  const [quantityUnitPrice, setQuantityUnitPrice] = useState("0")
   const [productValues, setProductValues] = useState<Record<string, unknown>>({})
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -80,9 +79,8 @@ export function ProductFormPage() {
         setSellingUnitId(product.selling_unit_id)
         setNetQuantity(product.net_quantity ?? "")
         setNetQuantityUnitId(product.net_quantity_unit_id ?? "")
-        setCostPrice(product.cost_price)
         setSellingPrice(product.selling_price)
-        setCurrencyCode(product.currency_code)
+        setQuantityUnitPrice(product.quantity_unit_price)
         setProductValues(Object.fromEntries(product.attribute_values.map((item) => [item.attribute_id, item.value])))
       })
       .catch((reason: Error) => setError(reason.message))
@@ -120,7 +118,7 @@ export function ProductFormPage() {
     }
     setSaving(true)
     try {
-      const saved = await saveProduct(
+      await saveProduct(
         {
           category_id: categoryId,
           name,
@@ -133,14 +131,13 @@ export function ProductFormPage() {
           selling_unit_id: sellingUnitId,
           net_quantity: netQuantity || null,
           net_quantity_unit_id: netQuantityUnitId || null,
-          cost_price: costPrice,
           selling_price: sellingPrice,
-          currency_code: currencyCode || "PKR",
+          quantity_unit_price: quantityUnitPrice || "0",
           attribute_values: toValueList(schema, productValues),
         },
         productId,
       )
-      navigate(`/products/${saved.id}`)
+      navigate("/products")
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not save the product")
     } finally {
@@ -197,16 +194,6 @@ export function ProductFormPage() {
         <div className="md:col-span-2 border-t border-line pt-4">
           <h2 className="font-display text-xl text-ink">Units and pricing</h2>
         </div>
-        <Field label="Base unit">
-          <select className="field" value={baseUnitId} onChange={(event) => setBaseUnitId(event.target.value)}>
-            <option value="">None</option>
-            {units.map((unit) => (
-              <option key={unit.id} value={unit.id}>
-                {unit.name} ({unit.symbol})
-              </option>
-            ))}
-          </select>
-        </Field>
         <Field label="Selling unit">
           <select className="field" value={sellingUnitId} onChange={(event) => setSellingUnitId(event.target.value)} required>
             <option value="">Select a unit</option>
@@ -217,8 +204,8 @@ export function ProductFormPage() {
             ))}
           </select>
         </Field>
-        <Field label="Net quantity">
-          <input className="field" value={netQuantity} onChange={(event) => setNetQuantity(event.target.value)} />
+        <Field label="Selling price">
+          <input className="field" value={sellingPrice} onChange={(event) => setSellingPrice(event.target.value)} required />
         </Field>
         <Field label="Quantity unit">
           <select className="field" value={netQuantityUnitId} onChange={(event) => setNetQuantityUnitId(event.target.value)}>
@@ -230,14 +217,11 @@ export function ProductFormPage() {
             ))}
           </select>
         </Field>
-        <Field label="Cost price">
-          <input className="field" value={costPrice} onChange={(event) => setCostPrice(event.target.value)} required />
+        <Field label="Quantity units in one selling unit">
+          <input className="field" value={netQuantity} onChange={(event) => setNetQuantity(event.target.value)} />
         </Field>
-        <Field label="Selling price">
-          <input className="field" value={sellingPrice} onChange={(event) => setSellingPrice(event.target.value)} required />
-        </Field>
-        <Field label="Currency">
-          <input className="field" value={currencyCode} onChange={(event) => setCurrencyCode(event.target.value)} required />
+        <Field label="Quantity unit price">
+          <input className="field" value={quantityUnitPrice} onChange={(event) => setQuantityUnitPrice(event.target.value)} />
         </Field>
         <div className="md:col-span-2">
           <Field label="Description">

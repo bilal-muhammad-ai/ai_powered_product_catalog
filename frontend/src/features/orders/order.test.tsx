@@ -14,6 +14,26 @@ const cement = {
   unit_symbol: "bag",
   selling_price: "1100.00",
   quantity_on_hand: "10.0000",
+  quantity_unit_id: null,
+  quantity_unit_symbol: null,
+  quantity_unit_price: "0.00",
+  net_quantity: null,
+}
+
+const pipe = {
+  product_id: "pipe-1",
+  name: "Soil Pipe",
+  sku: "PIPE-1",
+  category_id: "cat",
+  category_name: "Pipes",
+  unit_id: "pc",
+  unit_symbol: "pc",
+  selling_price: "500.00",
+  quantity_on_hand: "10.0000",
+  quantity_unit_id: "ft",
+  quantity_unit_symbol: "ft",
+  quantity_unit_price: "25.00",
+  net_quantity: "20.0000",
 }
 
 function json(body: unknown) {
@@ -68,7 +88,10 @@ describe("order screens", () => {
     const onSubmit = vi.fn()
     render(<OrderEditor onSubmit={onSubmit} onCancel={() => undefined} />)
     fireEvent.change(screen.getByPlaceholderText("Cement, rod, SKU"), { target: { value: "maple" } })
-    fireEvent.click(await screen.findByRole("button", { name: /maple leaf cement/i }))
+    const result = await screen.findByRole("button", { name: /maple leaf cement/i })
+    expect(result.textContent).toMatch(/10 bag/)
+    expect(result.textContent).not.toMatch(/ft/)
+    fireEvent.click(result)
     expect(screen.getAllByText(/1,100\.00/).length).toBeGreaterThan(0)
     fireEvent.click(screen.getByRole("button", { name: /confirm order/i }))
     await waitFor(() => expect(onSubmit).toHaveBeenCalled())
@@ -76,6 +99,27 @@ describe("order screens", () => {
     expect(body.items[0].product_id).toBe("product-1")
     expect(body.items[0].quantity).toBe("1")
     expect(body.items[0].unit_price).toBe("1100.00")
+  })
+
+  it("switches to the quantity unit price without changing quantity", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((input: RequestInfo) => json(String(input).includes("/catalog") ? [pipe] : { items: [], total: 0, page: 1, page_size: 100 })),
+    )
+    render(<OrderEditor onSubmit={vi.fn()} onCancel={() => undefined} />)
+    fireEvent.change(screen.getByPlaceholderText("Cement, rod, SKU"), { target: { value: "soil" } })
+    const result = await screen.findByRole("button", { name: /soil pipe/i })
+    expect(result.textContent).toMatch(/10 pc/)
+    expect(result.textContent).not.toMatch(/200/)
+    fireEvent.click(result)
+    const quantity = screen.getByLabelText("Quantity for Soil Pipe") as HTMLInputElement
+    fireEvent.change(quantity, { target: { value: "2" } })
+    fireEvent.change(screen.getByLabelText("Unit for Soil Pipe"), { target: { value: "ft" } })
+    expect(quantity.value).toBe("2")
+    expect((screen.getByLabelText("Price for Soil Pipe") as HTMLInputElement).value).toBe("25.00")
+    expect(screen.getAllByText(/50\.00/).length).toBeGreaterThan(0)
+    const unit = screen.getByLabelText("Unit for Soil Pipe") as HTMLSelectElement
+    expect(Array.from(unit.options).map((option) => option.textContent)).toEqual(["pc", "ft"])
   })
 
   it("resolves an AI order one choice at a time and keeps manual products", async () => {

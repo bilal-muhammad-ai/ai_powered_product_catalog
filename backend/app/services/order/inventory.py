@@ -36,17 +36,16 @@ def confirm_order(db: Session, order: Order) -> Order:
         raise CatalogueError("Only a draft order can be confirmed", 409)
     if not locked.items:
         raise CatalogueError("Add at least one product", 422)
-    merged: dict[uuid.UUID, Decimal] = defaultdict(lambda: Decimal("0"))
-    selling_units: dict[uuid.UUID, uuid.UUID] = {}
+    merged: dict[tuple[uuid.UUID, uuid.UUID], Decimal] = defaultdict(lambda: Decimal("0"))
     for item in locked.items:
         product = db.get(Product, item.product_id)
         if product is None:
             raise CatalogueError("Product not found", 404)
-        merged[product.id] += to_selling_quantity(db, product, item.unit_id, item.quantity)
-        selling_units[product.id] = product.selling_unit_id
+        to_selling_quantity(db, product, item.unit_id, item.quantity)
+        merged[(product.id, item.unit_id)] += item.quantity
     lines = [
-        TransactionItemIn(product_id=product_id, unit_id=selling_units[product_id], quantity=q_qty(quantity))
-        for product_id, quantity in merged.items()
+        TransactionItemIn(product_id=product_id, unit_id=unit_id, quantity=q_qty(quantity))
+        for (product_id, unit_id), quantity in merged.items()
         if quantity > 0
     ]
     if not lines:

@@ -67,7 +67,6 @@ def _product_stub(**overrides):
         "selling_unit_id": unit_id,
         "status": ProductStatus.active,
         "selling_price": Decimal("1480.00"),
-        "cost_price": Decimal("1310.00"),
         "category": SimpleNamespace(name="Cement"),
         "selling_unit": SimpleNamespace(name="Bag", symbol="bag"),
     }
@@ -82,7 +81,6 @@ def test_passage_includes_name_category_and_unit_only():
     document = build_document(_product_stub())
     assert document.passage == text
     assert "1480" not in document.passage
-    assert "1310" not in document.passage
     assert "selling_price" not in document.payload
     assert "cost_price" not in document.payload
     assert document.payload["category_name"] == "Cement"
@@ -130,7 +128,6 @@ def test_reindex_catalogue_indexes_only_active_products(db):
             name=name,
             slug=sku.lower(),
             selling_unit_id=unit.id,
-            cost_price=Decimal("1310.00"),
             selling_price=Decimal("1480.00"),
             status=status,
             deleted_at=datetime.now(timezone.utc) if deleted else None,
@@ -172,7 +169,6 @@ def test_product_ingestion_endpoint_indexes_with_injected_dependencies(client, d
         name="Lucky Cement OPC 53 — 50 kg bag",
         slug=f"cem-in-{suffix}",
         selling_unit_id=unit.id,
-        cost_price=Decimal("1310.00"),
         selling_price=Decimal("1480.00"),
         status=ProductStatus.active,
     )

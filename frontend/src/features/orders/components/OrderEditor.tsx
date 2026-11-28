@@ -1,7 +1,5 @@
 import { Trash2 } from "lucide-react"
-import { useEffect, useMemo, useState } from "react"
-import { listUnits } from "../../../api/resources"
-import type { Unit } from "../../../api/types"
+import { useMemo, useState } from "react"
 import { Button, Card, Field } from "../../../components/ui"
 import { lineKey } from "../ai-order"
 import type { AiProductMatch, DiscountType, OrderBody, OrderCatalogHit } from "../api"
@@ -14,11 +12,35 @@ export type EditorLine = {
   productId: string
   name: string
   sku: string
+  sellingUnitId: string
+  sellingUnitSymbol: string
+  sellingPrice: string
+  quantityUnitId: string | null
+  quantityUnitSymbol: string | null
+  quantityUnitPrice: string
   unitId: string
   quantity: string
   unitPrice: string
   discountType: DiscountType
   discountValue: string
+}
+
+function lineUnits(line: EditorLine) {
+  const units = [{ id: line.sellingUnitId, symbol: line.sellingUnitSymbol }]
+  if (line.quantityUnitId && line.quantityUnitId !== line.sellingUnitId) {
+    units.push({ id: line.quantityUnitId, symbol: line.quantityUnitSymbol || "Qty" })
+  }
+  if (!units.some((unit) => unit.id === line.unitId)) {
+    units.push({ id: line.unitId, symbol: line.unitId })
+  }
+  return units
+}
+
+function priceForUnit(line: EditorLine, unitId: string) {
+  if (line.quantityUnitId && unitId === line.quantityUnitId && unitId !== line.sellingUnitId) {
+    return line.quantityUnitPrice || "0"
+  }
+  return line.sellingPrice
 }
 
 export function OrderEditor({
@@ -41,7 +63,6 @@ export function OrderEditor({
   onCancel: () => void
 }) {
   const [lines, setLines] = useState<EditorLine[]>(initialLines)
-  const [units, setUnits] = useState<Unit[]>([])
   const [date, setDate] = useState(initialDate ?? todayIso())
   const [notes, setNotes] = useState(initialNotes)
   const [discountType, setDiscountType] = useState<DiscountType>(initialDiscountType)
@@ -50,12 +71,6 @@ export function OrderEditor({
   const [saving, setSaving] = useState(false)
   const [choicePending, setChoicePending] = useState(false)
   const [excluded, setExcluded] = useState<string[]>([])
-
-  useEffect(() => {
-    listUnits(false)
-      .then((page) => setUnits(page.items))
-      .catch((reason: Error) => setError(reason.message))
-  }, [])
 
   const summary = useMemo(
     () =>
@@ -81,6 +96,12 @@ export function OrderEditor({
         productId: hit.product_id,
         name: hit.name,
         sku: hit.sku,
+        sellingUnitId: hit.unit_id,
+        sellingUnitSymbol: hit.unit_symbol,
+        sellingPrice: hit.selling_price,
+        quantityUnitId: hit.quantity_unit_id,
+        quantityUnitSymbol: hit.quantity_unit_symbol,
+        quantityUnitPrice: hit.quantity_unit_price,
         unitId: hit.unit_id,
         quantity: "1",
         unitPrice: hit.selling_price,
@@ -95,14 +116,21 @@ export function OrderEditor({
     setError(null)
     setLines((current) => {
       const existing = current.find((line) => line.key === key)
+      const kept = existing?.productId === match.product_id ? existing : undefined
       const next: EditorLine = {
         key,
         productId: match.product_id,
         name: match.name,
         sku: match.sku,
-        unitId: match.selling_unit_id,
+        sellingUnitId: match.selling_unit_id,
+        sellingUnitSymbol: match.selling_unit_symbol,
+        sellingPrice: match.selling_price,
+        quantityUnitId: match.quantity_unit_id ?? null,
+        quantityUnitSymbol: match.quantity_unit_symbol ?? null,
+        quantityUnitPrice: match.quantity_unit_price ?? "0",
+        unitId: kept?.unitId ?? match.selling_unit_id,
         quantity: existing?.quantity ?? quantity,
-        unitPrice: match.selling_price,
+        unitPrice: kept?.unitPrice ?? match.selling_price,
         discountType: existing?.discountType ?? "AMOUNT",
         discountValue: existing?.discountValue ?? "0",
       }
@@ -244,12 +272,16 @@ export function OrderEditor({
                               className="field min-w-24"
                               aria-label={`Unit for ${line.name}`}
                               value={line.unitId}
-                              onChange={(event) =>
-                                setLines((current) => current.map((item) => (item.key === line.key ? { ...item, unitId: event.target.value } : item)))
-                              }
+                              onChange={(event) => {
+                                const unitId = event.target.value
+                                setLines((current) =>
+                                  current.map((item) =>
+                                    item.key === line.key ? { ...item, unitId, unitPrice: priceForUnit(item, unitId) } : item,
+                                  ),
+                                )
+                              }}
                             >
-                              {units.some((unit) => unit.id === line.unitId) ? null : <option value={line.unitId}>{line.unitId}</option>}
-                              {units.map((unit) => (
+                              {lineUnits(line).map((unit) => (
                                 <option key={unit.id} value={unit.id}>
                                   {unit.symbol}
                                 </option>

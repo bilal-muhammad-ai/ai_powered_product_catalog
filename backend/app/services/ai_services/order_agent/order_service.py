@@ -121,7 +121,11 @@ def _active_products(db: Session, ids: set[uuid.UUID]) -> dict[uuid.UUID, Produc
             Product.deleted_at.is_(None),
             Product.status == ProductStatus.active,
         )
-        .options(selectinload(Product.category), selectinload(Product.selling_unit))
+        .options(
+            selectinload(Product.category),
+            selectinload(Product.selling_unit),
+            selectinload(Product.net_quantity_unit),
+        )
     )
     return {product.id: product for product in db.scalars(stmt)}
 
@@ -144,6 +148,10 @@ def _catalogue_products(matches: list[ProductMatch], rows: dict[uuid.UUID, Produ
                 selling_unit_symbol=product.selling_unit.symbol,
                 selling_unit_name=product.selling_unit.name,
                 selling_price=product.selling_price,
+                quantity_unit_id=None if product.net_quantity_unit_id is None else str(product.net_quantity_unit_id),
+                quantity_unit_symbol=None if product.net_quantity_unit is None else product.net_quantity_unit.symbol,
+                quantity_unit_price=product.quantity_unit_price,
+                net_quantity=product.net_quantity,
                 score=match.score,
             )
         )

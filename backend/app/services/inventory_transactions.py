@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import defaultdict
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
@@ -164,14 +165,15 @@ def _prepare_line(
 
     if incoming.quantity is None or incoming.quantity <= 0:
         raise CatalogueError("Quantity must be greater than zero", 422)
-    stock_qty = to_selling_quantity(db, product, incoming.unit_id, incoming.quantity)
+    entered = incoming.quantity
+    stock_qty = to_selling_quantity(db, product, incoming.unit_id, entered)
     if stock_qty <= 0:
         raise CatalogueError("Quantity must be greater than zero", 422)
     if transaction_type == InventoryTransactionType.stock_issue:
         average = _average(db, product.id)
         delta = -stock_qty
-        unit_cost = q_money(average)
         total_cost = q_money(stock_qty * average)
+        unit_cost = q_money(total_cost / entered)
     elif transaction_type in INCREASE_TYPES:
         unit_cost, total_cost = _line_cost(incoming.quantity, incoming.unit_cost, product.name)
         delta = stock_qty
@@ -180,7 +182,7 @@ def _prepare_line(
     return InventoryTransactionItem(
         product_id=product.id,
         unit_id=incoming.unit_id,
-        quantity=q_qty(incoming.quantity),
+        quantity=q_qty(entered),
         unit_cost=unit_cost,
         total_cost=total_cost,
         quantity_delta=delta,
@@ -199,12 +201,13 @@ def _prepare_items(
     transaction_type: InventoryTransactionType,
     items: list[TransactionItemIn],
 ) -> list[InventoryTransactionItem]:
-    seen: set[uuid.UUID] = set()
+    seen: set[tuple[uuid.UUID, uuid.UUID]] = set()
     prepared: list[InventoryTransactionItem] = []
     for incoming in items:
-        if incoming.product_id in seen:
+        key = (incoming.product_id, incoming.unit_id)
+        if key in seen:
             raise CatalogueError("Duplicate product on this transaction", 422)
-        seen.add(incoming.product_id)
+        seen.add(key)
         prepared.append(_prepare_line(db, transaction_type, incoming))
     return prepared
 
@@ -310,8 +313,17 @@ def post_transaction(db: Session, transaction_id: uuid.UUID) -> InventoryTransac
         product_id: _lock_balance(db, product_id)
         for product_id in sorted({item.product_id for item, _ in staged})
     }
+    if loaded.transaction_type == InventoryTransactionType.stock_issue:
+        needed: dict[uuid.UUID, Decimal] = defaultdict(lambda: Decimal("0"))
+        names: dict[uuid.UUID, str] = {}
+        for item, product in staged:
+            needed[product.id] += to_selling_quantity(db, product, item.unit_id, item.quantity)
+            names[product.id] = product.name
+        for product_id, quantity in needed.items():
+            if balances[product_id].quantity_on_hand < quantity:
+                raise CatalogueError(f"Insufficient stock for {names[product_id]}", 422)
     for item, product in staged:
-        _ensure_available(db, loaded.transaction_type, item, product, balances[item.product_id])
+        _ensure_available(loaded.transaction_type, product, balances[item.product_id])
     for item, product in staged:
         _apply_item(db, loaded.transaction_type, item, product, balances[item.product_id])
     loaded.status = InventoryTransactionStatus.posted
@@ -336,17 +348,10 @@ def _ensure_line_unit(
 
 
 def _ensure_available(
-    db: Session,
     transaction_type: InventoryTransactionType,
-    item: InventoryTransactionItem,
     product: Product,
     balance: StockBalance,
 ) -> None:
-    if transaction_type == InventoryTransactionType.stock_issue:
-        needed = to_selling_quantity(db, product, item.unit_id, item.quantity)
-        if balance.quantity_on_hand < needed:
-            raise CatalogueError(f"Insufficient stock for {product.name}", 422)
-        return
     if transaction_type == InventoryTransactionType.opening_stock and balance.quantity_on_hand > 0:
         raise CatalogueError(f"{product.name} already has stock. Use a receipt.", 422)
 
@@ -386,9 +391,9 @@ def _apply_item(
 
     stock_qty = to_selling_quantity(db, product, item.unit_id, item.quantity)
     if transaction_type == InventoryTransactionType.stock_issue:
-        total, unit_cost = apply_decrease(balance, stock_qty)
-        item.unit_cost = unit_cost
+        total, _unit_cost = apply_decrease(balance, stock_qty)
         item.total_cost = total
+        item.unit_cost = q_money(total / item.quantity) if item.quantity else Decimal("0.00")
         item.quantity_delta = -stock_qty
         return
     if transaction_type in INCREASE_TYPES:
