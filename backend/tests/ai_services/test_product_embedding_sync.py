@@ -90,7 +90,21 @@ def test_sync_updates_existing_point_and_keeps_extra_metadata(db, monkeypatch):
     product, holder = _catalogue(db)
     legacy_id = "legacy-vector"
     store = FakeSyncStore(
-        [(legacy_id, {"product_id": str(product.id), "source": "import", "name": "Old name"})]
+        [
+            (
+                legacy_id,
+                {
+                    "product_id": str(product.id),
+                    "source": "import",
+                    "name": "Old name",
+                    "category_id": "old-category",
+                    "category_name": "Cement",
+                    "selling_unit_id": "old-unit",
+                    "selling_unit_symbol": "bag",
+                    "selling_unit_name": "Bag",
+                },
+            )
+        ]
     )
     _patch_index(monkeypatch, holder, store)
 
@@ -104,7 +118,11 @@ def test_sync_updates_existing_point_and_keeps_extra_metadata(db, monkeypatch):
     assert stored.payload["source"] == "import"
     assert stored.payload["name"] == "OPC Cement 50 kg"
     assert stored.payload["product_id"] == str(product.id)
-    assert stored.payload["category_name"] == "Cement"
+    assert "category_id" not in stored.payload
+    assert "category_name" not in stored.payload
+    assert "selling_unit_id" not in stored.payload
+    assert "selling_unit_symbol" not in stored.payload
+    assert "selling_unit_name" not in stored.payload
     assert stored.vector[0] == float(len(build_document(product).passage))
     assert stored.sparse.indices == [len(build_document(product).passage)]
 

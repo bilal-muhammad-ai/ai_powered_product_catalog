@@ -74,18 +74,20 @@ def _product_stub(**overrides):
     return SimpleNamespace(**values)
 
 
-def test_passage_includes_name_category_and_unit_only():
-    text = passage_text("Maple Leaf Cement OPC 43 — 50 kg bag", "Cement", "Bag", "bag")
+def test_passage_includes_name_and_category_only():
+    text = passage_text("Maple Leaf Cement OPC 43 — 50 kg bag", "Cement")
 
-    assert text == "passage: Maple Leaf Cement OPC 43 — 50 kg bag\nCategory: Cement\nUnit: Bag (bag)"
+    assert text == "passage: Maple Leaf Cement OPC 43 — 50 kg bag\nCategory: Cement)"
     document = build_document(_product_stub())
     assert document.passage == text
     assert "1480" not in document.passage
     assert "selling_price" not in document.payload
     assert "cost_price" not in document.payload
-    assert document.payload["category_name"] == "Cement"
-    assert document.payload["selling_unit_symbol"] == "bag"
-    assert document.payload["selling_unit_name"] == "Bag"
+    assert "category_id" not in document.payload
+    assert "category_name" not in document.payload
+    assert "selling_unit_id" not in document.payload
+    assert "selling_unit_symbol" not in document.payload
+    assert "selling_unit_name" not in document.payload
 
 
 def test_reindex_upserts_active_products_and_drops_stale_ids():

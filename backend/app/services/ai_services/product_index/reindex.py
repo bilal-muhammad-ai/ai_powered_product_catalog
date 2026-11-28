@@ -40,7 +40,7 @@ def load_active_products(db: Session) -> list[Product]:
     stmt = (
         select(Product)
         .where(Product.status == ProductStatus.active, Product.deleted_at.is_(None))
-        .options(selectinload(Product.category), selectinload(Product.selling_unit))
+        .options(selectinload(Product.category))
         .order_by(Product.name, Product.id)
     )
     return list(db.scalars(stmt))

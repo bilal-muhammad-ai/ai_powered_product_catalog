@@ -20,7 +20,6 @@ def passage_text(name: str, category_name: str) -> str:
 def build_document(product: Any) -> ProductDocument:
     """Build the embedding text and the payload used later to load the SQL row."""
     category = product.category
-    unit = product.selling_unit
     passage = passage_text(product.name, category.name)
     return ProductDocument(
         product_id=product.id,
@@ -28,10 +27,5 @@ def build_document(product: Any) -> ProductDocument:
         payload={
             "product_id": str(product.id),
             "name": product.name,
-            "category_id": str(product.category_id),
-            "category_name": category.name,
-            "selling_unit_id": str(product.selling_unit_id),
-            "selling_unit_symbol": unit.symbol,
-            "selling_unit_name": unit.name,
         },
     )

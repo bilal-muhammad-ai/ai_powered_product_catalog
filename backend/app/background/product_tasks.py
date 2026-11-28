@@ -55,7 +55,7 @@ def _sync_product_embedding(db: Session, product_id: uuid.UUID) -> None:
     product = db.scalar(
         select(Product)
         .where(Product.id == product_id, Product.deleted_at.is_(None))
-        .options(selectinload(Product.category), selectinload(Product.selling_unit))
+        .options(selectinload(Product.category))
     )
     if product is None:
         logger.warning("product %s not found for embedding sync", product_id)
