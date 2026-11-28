@@ -122,10 +122,8 @@ def save_product(db: Session, data: ProductWrite, product: Product | None = None
         "selling_unit_id": data.selling_unit_id,
         "net_quantity": data.net_quantity,
         "net_quantity_unit_id": data.net_quantity_unit_id,
-        "cost_price": _money(data.cost_price),
         "selling_price": _money(data.selling_price),
         "quantity_unit_price": _money(data.quantity_unit_price),
-        "currency_code": data.currency_code,
     }
     if product is None:
         product = Product(
@@ -261,10 +259,8 @@ def to_detail(product: Product) -> ProductDetail:
         selling_unit_id=product.selling_unit_id,
         net_quantity=product.net_quantity,
         net_quantity_unit_id=product.net_quantity_unit_id,
-        cost_price=product.cost_price,
         selling_price=product.selling_price,
         quantity_unit_price=product.quantity_unit_price,
-        currency_code=product.currency_code,
         status=product.status,
         attribute_values=attribute_values,
         created_at=product.created_at,
@@ -398,7 +394,6 @@ def list_products(
             category_id=product.category_id,
             category_name=category_name,
             selling_price=product.selling_price,
-            currency_code=product.currency_code,
             updated_at=product.updated_at,
         )
         for product, category_name in rows

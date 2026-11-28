@@ -37,7 +37,6 @@ def _body(category_id, unit_id, name, sku, type_id, type_option, weight_id, weig
         "name": name,
         "sku": sku,
         "selling_unit_id": unit_id,
-        "cost_price": "900",
         "selling_price": price,
         "status": "active",
         "attribute_values": [

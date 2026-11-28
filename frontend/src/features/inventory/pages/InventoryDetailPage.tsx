@@ -78,11 +78,18 @@ export function InventoryDetailPage() {
             <StatCard label="Inventory value" value={formatPkr(detail.inventory_value)} />
             <StatCard label="Status" value={<InventoryStatusBadge status={detail.stock_status} />} />
           </StatGrid>
-          <p className="mb-6 text-sm text-stone-600">
-            Catalogue cost {formatPkr(detail.cost_price)}
-            {detail.brand ? ` · ${detail.brand}` : ""}
-            {detail.net_quantity ? ` · ${formatQty(detail.net_quantity)} ${detail.net_quantity_unit_symbol ?? ""} per ${detail.unit_symbol}` : ""}
-          </p>
+          {detail.brand || detail.net_quantity ? (
+            <p className="mb-6 text-sm text-stone-600">
+              {[
+                detail.brand,
+                detail.net_quantity
+                  ? `${formatQty(detail.net_quantity)} ${detail.net_quantity_unit_symbol ?? ""} per ${detail.unit_symbol}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          ) : null}
           <form
             className="mb-8"
             onSubmit={(event) => {

@@ -36,7 +36,6 @@ def test_concurrent_order_confirms_cannot_oversell(engine):
                 name="Concurrent order cement",
                 sku=f"ORD-{uuid.uuid4().hex[:8]}",
                 selling_unit_id=unit.id,
-                cost_price=Decimal("10"),
                 selling_price=Decimal("12"),
                 status=ProductStatus.active,
             ),

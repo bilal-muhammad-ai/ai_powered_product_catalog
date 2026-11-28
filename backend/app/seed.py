@@ -346,7 +346,6 @@ def _product(
         selling_unit_id=selling_unit_id,
         net_quantity=spec.net_quantity,
         net_quantity_unit_id=_unit_id(units, spec.net_quantity_unit, spec.code),
-        cost_price=spec.cost_price,
         selling_price=spec.selling_price,
         attribute_values=_values(db, attributes, spec.attributes, spec.code),
     )

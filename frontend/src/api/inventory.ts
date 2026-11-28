@@ -24,8 +24,6 @@ export type BalanceItem = {
 }
 
 export type InventoryDetail = BalanceItem & {
-  cost_price: string
-  currency_code: string
   barcode: string | null
   net_quantity: string | null
   net_quantity_unit_symbol: string | null

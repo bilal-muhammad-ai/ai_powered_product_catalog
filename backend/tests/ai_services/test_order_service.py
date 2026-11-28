@@ -98,7 +98,6 @@ def test_catalogue_details_replace_retrieved_fields(db):
         name="Catalogue DG Cement",
         slug=f"cem-{suffix}",
         selling_unit_id=unit.id,
-        cost_price=Decimal("900.00"),
         selling_price=Decimal("1480.00"),
         status=ProductStatus.active,
     )
@@ -108,7 +107,6 @@ def test_catalogue_details_replace_retrieved_fields(db):
         name="Draft cement",
         slug=f"draft-{suffix}",
         selling_unit_id=unit.id,
-        cost_price=Decimal("1.00"),
         selling_price=Decimal("2.00"),
         status=ProductStatus.draft,
     )
@@ -118,7 +116,6 @@ def test_catalogue_details_replace_retrieved_fields(db):
         name="Deleted cement",
         slug=f"deleted-{suffix}",
         selling_unit_id=unit.id,
-        cost_price=Decimal("1.00"),
         selling_price=Decimal("2.00"),
         status=ProductStatus.active,
         deleted_at=datetime.now(timezone.utc),
