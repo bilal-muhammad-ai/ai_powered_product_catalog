@@ -48,7 +48,7 @@ class Product(UUIDMixin, TimestampMixin, Base):
         ForeignKey("units.id", ondelete="RESTRICT"),
         nullable=True,
     )
-    sku: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    sku: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     barcode: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     slug: Mapped[str] = mapped_column(String(220), unique=True, nullable=False)

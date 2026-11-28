@@ -218,7 +218,8 @@ def delete_product(db: Session, product: Product) -> None:
     product.deleted_at = datetime.now(timezone.utc)
     product.slug = retired_key(product.slug, product.id, 220)
     product.code = None
-    product.sku = retired_key(product.sku, product.id, 64)
+    if product.sku:
+        product.sku = retired_key(product.sku, product.id, 64)
     product.barcode = None
     db.flush()
 

@@ -5,6 +5,22 @@ import { Card, ConfirmationDialog, DataTable, ErrorNote, Field, PageHeader, Pagi
 import { TransactionStatusBadge, transactionTypeLabel } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
 
+type TransactionFilters = {
+  q: string
+  type: string
+  status: string
+  dateFrom: string
+  dateTo: string
+}
+
+const emptyTransactionFilters: TransactionFilters = {
+  q: "",
+  type: "",
+  status: "",
+  dateFrom: "",
+  dateTo: "",
+}
+
 export function InventoryTransactionListPage() {
   const [items, setItems] = useState<TransactionListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -18,16 +34,17 @@ export function InventoryTransactionListPage() {
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState<{ id: string; action: "post" | "reverse"; number: string } | null>(null)
 
-  async function reload(nextPage = page) {
+  async function reload(nextPage = page, filters?: TransactionFilters) {
+    const current = filters ?? { q, type, status, dateFrom, dateTo }
     setLoading(true)
     const result = await listTransactions({
       page: String(nextPage),
       page_size: "20",
-      transaction_type: type,
-      status,
-      q,
-      date_from: dateFrom,
-      date_to: dateTo,
+      transaction_type: current.type,
+      status: current.status,
+      q: current.q,
+      date_from: current.dateFrom,
+      date_to: current.dateTo,
     })
     setItems(result.items)
     setTotal(result.total)
@@ -41,6 +58,18 @@ export function InventoryTransactionListPage() {
       setLoading(false)
     })
   }, [])
+
+  function clearFilters() {
+    setQ(emptyTransactionFilters.q)
+    setType(emptyTransactionFilters.type)
+    setStatus(emptyTransactionFilters.status)
+    setDateFrom(emptyTransactionFilters.dateFrom)
+    setDateTo(emptyTransactionFilters.dateTo)
+    reload(1, emptyTransactionFilters).catch((reason: Error) => {
+      setError(reason.message)
+      setLoading(false)
+    })
+  }
 
   async function confirm() {
     if (!pending) return
@@ -102,9 +131,12 @@ export function InventoryTransactionListPage() {
         <Field label="To">
           <input className="field" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} />
         </Field>
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <button className="btn" type="submit">
             Apply filters
+          </button>
+          <button className="btn-ghost" type="button" onClick={clearFilters}>
+            Clear
           </button>
         </div>
         </Card>

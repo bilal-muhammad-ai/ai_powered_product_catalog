@@ -104,8 +104,13 @@ export function CategoriesPage() {
           </div>
         </Card>
       </form>
-      <Card className="mb-4 p-4">
-        <SearchInput label="Find in this list" value={query} onChange={setQuery} placeholder="Category name" />
+      <Card className="mb-4 flex items-end gap-2 p-4">
+        <div className="min-w-0 flex-1">
+          <SearchInput label="Find in this list" value={query} onChange={setQuery} placeholder="Category name" />
+        </div>
+        <button className="btn-ghost" type="button" onClick={() => setQuery("")}>
+          Clear
+        </button>
       </Card>
       {loading ? <p className="text-sm text-stone-500">Loading categories…</p> : null}
       {!loading && visible.length === 0 ? <p className="text-sm text-stone-500">No categories yet.</p> : null}

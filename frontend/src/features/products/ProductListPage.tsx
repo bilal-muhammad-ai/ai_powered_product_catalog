@@ -20,6 +20,22 @@ import { formatPkr } from "../orders/logic"
 
 const pageSize = 20
 
+type ProductFilters = {
+  q: string
+  categoryId: string
+  status: string
+  attrCode: string
+  attrValue: string
+}
+
+const emptyProductFilters: ProductFilters = {
+  q: "",
+  categoryId: "",
+  status: "",
+  attrCode: "",
+  attrValue: "",
+}
+
 export function ProductListPage() {
   const [items, setItems] = useState<ProductListItem[]>([])
   const [total, setTotal] = useState(0)
@@ -34,14 +50,15 @@ export function ProductListPage() {
   const [attrValue, setAttrValue] = useState("")
   const [pendingDelete, setPendingDelete] = useState<ProductListItem | null>(null)
 
-  async function reload(nextPage = page) {
+  async function reload(nextPage = page, filters?: ProductFilters) {
+    const current = filters ?? { q, categoryId, status, attrCode, attrValue }
     const params = new URLSearchParams()
     params.set("page", String(nextPage))
     params.set("page_size", String(pageSize))
-    if (q) params.set("q", q)
-    if (categoryId) params.set("category_id", categoryId)
-    if (status) params.set("status", status)
-    if (attrCode && attrValue) params.append("attr", `${attrCode}:${attrValue}`)
+    if (current.q) params.set("q", current.q)
+    if (current.categoryId) params.set("category_id", current.categoryId)
+    if (current.status) params.set("status", current.status)
+    if (current.attrCode && current.attrValue) params.append("attr", `${current.attrCode}:${current.attrValue}`)
     const result = await listProducts(params)
     setItems(result.items)
     setTotal(result.total)
@@ -55,6 +72,19 @@ export function ProductListPage() {
       setLoading(false)
     })
   }, [])
+
+  function clearFilters() {
+    setQ(emptyProductFilters.q)
+    setCategoryId(emptyProductFilters.categoryId)
+    setStatus(emptyProductFilters.status)
+    setAttrCode(emptyProductFilters.attrCode)
+    setAttrValue(emptyProductFilters.attrValue)
+    setLoading(true)
+    reload(1, emptyProductFilters).catch((reason: Error) => {
+      setError(reason.message)
+      setLoading(false)
+    })
+  }
 
   const flat = flattenCategories(categories)
 
@@ -120,9 +150,12 @@ export function ProductListPage() {
           <Field label="Attribute value">
             <input className="field" value={attrValue} onChange={(event) => setAttrValue(event.target.value)} placeholder="53" />
           </Field>
-          <div className="xl:col-span-5">
+          <div className="flex gap-2 xl:col-span-5">
             <button className="btn" type="submit">
               Apply filters
+            </button>
+            <button className="btn-ghost" type="button" onClick={clearFilters}>
+              Clear
             </button>
           </div>
         </Card>

@@ -16,7 +16,7 @@ class AttributeValueIn(BaseModel):
 class ProductWrite(BaseModel):
     category_id: uuid.UUID
     name: str = Field(min_length=1, max_length=200)
-    sku: str = Field(min_length=1, max_length=64)
+    sku: str | None = Field(default=None, max_length=64)
     barcode: str | None = Field(default=None, max_length=64)
     code: str | None = Field(default=None, max_length=64)
     description: str | None = Field(default=None, max_length=8000)
@@ -52,7 +52,7 @@ class ProductDetail(BaseModel):
     category_id: uuid.UUID
     category_name: str
     base_unit_id: uuid.UUID | None
-    sku: str
+    sku: str | None
     barcode: str | None
     name: str
     slug: str
@@ -72,7 +72,7 @@ class ProductDetail(BaseModel):
 class ProductListItem(BaseModel):
     id: uuid.UUID
     name: str
-    sku: str
+    sku: str | None
     code: str | None
     slug: str
     status: ProductStatus

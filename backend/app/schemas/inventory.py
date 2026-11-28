@@ -75,7 +75,7 @@ class TransactionItemOut(BaseModel):
     id: uuid.UUID
     product_id: uuid.UUID
     product_name: str
-    sku: str
+    sku: str | None
     unit_id: uuid.UUID
     unit_symbol: str
     quantity: Decimal
@@ -121,7 +121,7 @@ class TransactionListItem(BaseModel):
 class BalanceItem(BaseModel):
     product_id: uuid.UUID
     product_name: str
-    sku: str
+    sku: str | None
     category_id: uuid.UUID
     category_name: str
     brand: str | None
@@ -182,7 +182,7 @@ class InventorySummary(BaseModel):
 class CatalogHit(BaseModel):
     product_id: uuid.UUID
     name: str
-    sku: str
+    sku: str | None
     category_name: str
     brand: str | None
     unit_id: uuid.UUID

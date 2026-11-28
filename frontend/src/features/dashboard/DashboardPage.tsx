@@ -190,7 +190,7 @@ export function DashboardPage() {
                       {item.product_name}
                     </Link>
                     <p className="text-xs text-stone-500">
-                      {item.sku} · {formatQty(item.quantity_on_hand)} {item.unit_symbol}
+                      {[item.sku, `${formatQty(item.quantity_on_hand)} ${item.unit_symbol}`].filter(Boolean).join(" · ")}
                     </p>
                   </div>
                   <InventoryStatusBadge status={item.stock_status} />

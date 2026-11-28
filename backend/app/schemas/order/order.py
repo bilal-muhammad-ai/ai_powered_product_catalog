@@ -98,7 +98,7 @@ class OrderListItem(BaseModel):
 class OrderCatalogHit(BaseModel):
     product_id: uuid.UUID
     name: str
-    sku: str
+    sku: str | None
     category_id: uuid.UUID
     category_name: str
     unit_id: uuid.UUID

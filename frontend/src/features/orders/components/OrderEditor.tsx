@@ -95,7 +95,7 @@ export function OrderEditor({
         key: `${hit.product_id}-${current.length}`,
         productId: hit.product_id,
         name: hit.name,
-        sku: hit.sku,
+        sku: hit.sku ?? "",
         sellingUnitId: hit.unit_id,
         sellingUnitSymbol: hit.unit_symbol,
         sellingPrice: hit.selling_price,

@@ -125,8 +125,13 @@ export function UnitsPage() {
           </div>
         </Card>
       </form>
-      <Card className="mb-4 p-4">
-        <SearchInput label="Find in this list" value={query} onChange={setQuery} placeholder="Name or symbol" />
+      <Card className="mb-4 flex items-end gap-2 p-4">
+        <div className="min-w-0 flex-1">
+          <SearchInput label="Find in this list" value={query} onChange={setQuery} placeholder="Name or symbol" />
+        </div>
+        <button className="btn-ghost" type="button" onClick={() => setQuery("")}>
+          Clear
+        </button>
       </Card>
       <DataTable>
         <thead className={tableHeadClass}>

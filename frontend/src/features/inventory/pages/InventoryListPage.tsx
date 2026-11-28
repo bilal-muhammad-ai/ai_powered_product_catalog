@@ -8,6 +8,24 @@ import { flattenCategories } from "../../../lib/tree"
 import { InventoryStatusBadge } from "../components/InventoryStatusBadge"
 import { formatPkr, formatQty } from "../logic"
 
+type StockFilters = {
+  q: string
+  categoryId: string
+  brand: string
+  status: string
+  sort: string
+  direction: string
+}
+
+const defaultStockFilters: StockFilters = {
+  q: "",
+  categoryId: "",
+  brand: "",
+  status: "",
+  sort: "name",
+  direction: "asc",
+}
+
 export function InventoryListPage() {
   const [items, setItems] = useState<BalanceItem[]>([])
   const [total, setTotal] = useState(0)
@@ -22,15 +40,16 @@ export function InventoryListPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  async function reload(nextPage = page) {
+  async function reload(nextPage = page, filters?: StockFilters) {
+    const current = filters ?? { q, categoryId, brand, status, sort, direction }
     setLoading(true)
     const result = await listInventory({
-      q,
-      category_id: categoryId,
-      brand,
-      status,
-      sort,
-      direction,
+      q: current.q,
+      category_id: current.categoryId,
+      brand: current.brand,
+      status: current.status,
+      sort: current.sort,
+      direction: current.direction,
       page: String(nextPage),
       page_size: "20",
     })
@@ -46,6 +65,16 @@ export function InventoryListPage() {
       setLoading(false)
     })
   }, [])
+
+  function clearFilters() {
+    setQ(defaultStockFilters.q)
+    setCategoryId(defaultStockFilters.categoryId)
+    setBrand(defaultStockFilters.brand)
+    setStatus(defaultStockFilters.status)
+    setSort(defaultStockFilters.sort)
+    setDirection(defaultStockFilters.direction)
+    reload(1, defaultStockFilters).catch((reason: Error) => setError(reason.message))
+  }
 
   return (
     <div>
@@ -104,9 +133,12 @@ export function InventoryListPage() {
             <option value="desc">Descending</option>
           </select>
         </Field>
-        <div className="flex items-end">
+        <div className="flex items-end gap-2">
           <button className="btn" type="submit">
             Apply filters
+          </button>
+          <button className="btn-ghost" type="button" onClick={clearFilters}>
+            Clear
           </button>
         </div>
         </Card>

@@ -8,7 +8,7 @@ export type TransactionStatus = "DRAFT" | "POSTED" | "CANCELLED" | "REVERSED"
 export type BalanceItem = {
   product_id: string
   product_name: string
-  sku: string
+  sku: string | null
   category_id: string
   category_name: string
   brand: string | null
@@ -33,7 +33,7 @@ export type TransactionItem = {
   id: string
   product_id: string
   product_name: string
-  sku: string
+  sku: string | null
   unit_id: string
   unit_symbol: string
   quantity: string
@@ -106,7 +106,7 @@ export type InventorySummary = {
 export type CatalogHit = {
   product_id: string
   name: string
-  sku: string
+  sku: string | null
   category_name: string
   brand: string | null
   unit_id: string

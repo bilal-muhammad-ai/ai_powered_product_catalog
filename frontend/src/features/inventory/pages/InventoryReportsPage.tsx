@@ -10,6 +10,28 @@ const reports = [
   { id: "out-of-stock", label: "Out of stock" },
 ]
 
+type ReportFilters = {
+  report: string
+  q: string
+  dateFrom: string
+  dateTo: string
+}
+
+const defaultReportFilters: ReportFilters = {
+  report: "summary",
+  q: "",
+  dateFrom: "",
+  dateTo: "",
+}
+
+function reportQuery(filters: ReportFilters) {
+  return {
+    q: filters.report === "low-stock" || filters.report === "out-of-stock" ? undefined : filters.q,
+    date_from: filters.report === "movements" ? filters.dateFrom : undefined,
+    date_to: filters.report === "movements" ? filters.dateTo : undefined,
+  }
+}
+
 export function InventoryReportsPage() {
   const [report, setReport] = useState("summary")
   const [q, setQ] = useState("")
@@ -19,15 +41,12 @@ export function InventoryReportsPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const params = {
-    q: report === "low-stock" || report === "out-of-stock" ? undefined : q,
-    date_from: report === "movements" ? dateFrom : undefined,
-    date_to: report === "movements" ? dateTo : undefined,
-  }
+  const filters = { report, q, dateFrom, dateTo }
+  const params = reportQuery(filters)
 
-  function load() {
+  function load(next: ReportFilters = filters) {
     setLoading(true)
-    return getReport(report, params)
+    return getReport(next.report, reportQuery(next))
       .then(setTable)
       .finally(() => setLoading(false))
   }
@@ -38,6 +57,17 @@ export function InventoryReportsPage() {
       setLoading(false)
     })
   }, [report])
+
+  function clearFilters() {
+    setReport(defaultReportFilters.report)
+    setQ(defaultReportFilters.q)
+    setDateFrom(defaultReportFilters.dateFrom)
+    setDateTo(defaultReportFilters.dateTo)
+    load(defaultReportFilters).catch((reason: Error) => {
+      setError(reason.message)
+      setLoading(false)
+    })
+  }
 
   return (
     <div>
@@ -77,6 +107,9 @@ export function InventoryReportsPage() {
           </Field>
           <button className="btn mb-0" type="submit">
             Apply
+          </button>
+          <button className="btn-ghost mb-0" type="button" onClick={clearFilters}>
+            Clear
           </button>
         </div>
         </Card>
